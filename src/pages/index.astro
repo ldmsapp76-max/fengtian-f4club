@@ -1,0 +1,201 @@
+---
+// 奉天F4Club — Home Page (Feed)
+import Layout from '../layouts/Layout.astro';
+import PostCard from '../components/PostCard.astro';
+import { getPosts, getAllUsers } from '../lib/db';
+import type { Post, User } from '../lib/db';
+
+const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
+const category = Astro.url.searchParams.get('cat') || '';
+const user = (Astro.locals as any).user;
+
+let posts: Post[] = [];
+let members: User[] = [];
+
+try {
+  const runtime = (Astro.locals as any).runtime;
+  if (runtime?.env?.DB) {
+    const DB = runtime.env.DB;
+    posts = await getPosts(DB, {
+      category: category || undefined,
+      userId: user?.id,
+    });
+    members = await getAllUsers(DB);
+  }
+} catch (e) {
+  console.error('Failed to load posts:', e);
+}
+
+const categories = [
+  { key: '', label: lang === 'zh' ? '全部' : 'All', emoji: '✦' },
+  { key: 'gaming', label: lang === 'zh' ? '游戏' : 'Gaming', emoji: '🎮' },
+  { key: 'movies', label: lang === 'zh' ? '电影' : 'Movies', emoji: '🎬' },
+  { key: 'sports', label: lang === 'zh' ? '运动' : 'Sports', emoji: '🏀' },
+  { key: 'english', label: lang === 'zh' ? '英语' : 'English', emoji: '📖' },
+];
+---
+
+<Layout title="奉天F4Club" lang={lang}>
+  <div class="container page-content">
+    <!-- Hero Section -->
+    <header class="hero">
+      <h1 class="hero-title">
+        <span class="hero-f4">F4</span>Club
+      </h1>
+      <p class="hero-desc">
+        {lang === 'zh' ? '前同事们的秘密基地 · 记录有趣的一切' : 'Our Secret Hangout · Logging the Fun Stuff'}
+      </p>
+
+      <!-- Members Row -->
+      {members.length > 0 && (
+        <div class="hero-members">
+          {members.map((m) => (
+            <a href={`/member/${m.nickname}`} class="hero-member" title={m.nickname}>
+              <span class="hero-member-emoji">{m.avatar_emoji}</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </header>
+
+    <!-- Category Filter -->
+    <nav class="category-filter" aria-label="Filter by category">
+      {categories.map((cat) => (
+        <a
+          href={cat.key ? `/?cat=${cat.key}${lang !== 'zh' ? `&lang=${lang}` : ''}` : `/${lang !== 'zh' ? `?lang=${lang}` : ''}`}
+          class={`filter-btn ${category === cat.key ? 'active' : ''}`}
+        >
+          <span>{cat.emoji}</span>
+          <span>{cat.label}</span>
+        </a>
+      ))}
+    </nav>
+
+    <!-- Posts Feed -->
+    {posts.length > 0 ? (
+      <div class="posts-grid">
+        {posts.map((post, i) => (
+          <PostCard post={post} lang={lang} index={i} />
+        ))}
+      </div>
+    ) : (
+      <div class="empty-state animate-fade-in">
+        <div class="icon">📭</div>
+        <p>{lang === 'zh' ? '还没有帖子，去发第一篇吧！' : 'No posts yet, create the first one!'}</p>
+        {user && (
+          <a href="/post/new" class="btn btn-primary" style="margin-top:var(--space-md)">
+            {lang === 'zh' ? '+ 发帖' : '+ New Post'}
+          </a>
+        )}
+      </div>
+    )}
+  </div>
+</Layout>
+
+<style>
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: var(--space-2xl) 0 var(--space-xl);
+  }
+
+  .hero-title {
+    font-size: var(--text-4xl);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    margin-bottom: var(--space-sm);
+  }
+
+  .hero-f4 {
+    background: linear-gradient(135deg, #e94560, #6c5ce7, #0984e3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-desc {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-lg);
+  }
+
+  .hero-members {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-sm);
+  }
+
+  .hero-member {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-full);
+    text-decoration: none;
+    transition: all var(--duration-normal) var(--ease-out);
+  }
+
+  .hero-member:hover {
+    transform: translateY(-3px) scale(1.1);
+    border-color: var(--accent);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .hero-member-emoji {
+    font-size: 1.4rem;
+  }
+
+  /* Category Filter */
+  .category-filter {
+    display: flex;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-subtle);
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .category-filter::-webkit-scrollbar { display: none; }
+
+  .filter-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all var(--duration-fast);
+    border: 1px solid transparent;
+  }
+
+  .filter-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-card);
+  }
+
+  .filter-btn.active {
+    color: var(--text-primary);
+    background: var(--bg-elevated);
+    border-color: var(--border-default);
+  }
+
+  /* Posts Grid */
+  .posts-grid {
+    display: grid;
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 640px) {
+    .posts-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

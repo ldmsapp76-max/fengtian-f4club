@@ -1,0 +1,122 @@
+---
+// 奉天F4Club — Category Page
+import Layout from '../../layouts/Layout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPosts } from '../../lib/db';
+import type { Post } from '../../lib/db';
+
+const { slug } = Astro.params;
+const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
+const user = (Astro.locals as any).user;
+
+const validCategories = ['gaming', 'movies', 'sports', 'english'];
+if (!slug || !validCategories.includes(slug)) {
+  return Astro.redirect('/');
+}
+
+const categoryConfig: Record<string, { emoji: string; zh: string; en: string }> = {
+  gaming: { emoji: '🎮', zh: '游戏', en: 'Gaming' },
+  movies: { emoji: '🎬', zh: '电影', en: 'Movies' },
+  sports: { emoji: '🏀', zh: '运动', en: 'Sports' },
+  english: { emoji: '📖', zh: '学英语', en: 'English' },
+};
+
+const config = categoryConfig[slug];
+
+let posts: Post[] = [];
+try {
+  const runtime = (Astro.locals as any).runtime;
+  if (runtime?.env?.DB) {
+    posts = await getPosts(runtime.env.DB, {
+      category: slug,
+      userId: user?.id,
+    });
+  }
+} catch (e) {
+  console.error('Failed to load posts:', e);
+}
+---
+
+<Layout title={`${config.emoji} ${config[lang]}`} lang={lang}>
+  <div class="container page-content">
+    <header class="category-header animate-fade-in">
+      <a href="/" class="back-link">← {lang === 'zh' ? '返回' : 'Back'}</a>
+      <div class="category-hero">
+        <span class="category-emoji">{config.emoji}</span>
+        <h1 class="category-title">{config[lang]}</h1>
+      </div>
+      <p class="post-count">
+        {posts.length} {lang === 'zh' ? '篇帖子' : 'posts'}
+      </p>
+    </header>
+
+    {posts.length > 0 ? (
+      <div class="posts-grid">
+        {posts.map((post, i) => (
+          <PostCard post={post} lang={lang} index={i} />
+        ))}
+      </div>
+    ) : (
+      <div class="empty-state animate-fade-in">
+        <div class="icon">{config.emoji}</div>
+        <p>{lang === 'zh' ? '这个分类还没有帖子' : 'No posts in this category yet'}</p>
+        {user && (
+          <a href="/post/new" class="btn btn-primary" style="margin-top:var(--space-md)">
+            {lang === 'zh' ? '+ 发帖' : '+ New Post'}
+          </a>
+        )}
+      </div>
+    )}
+  </div>
+</Layout>
+
+<style>
+  .category-header {
+    text-align: center;
+    padding: var(--space-xl) 0;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-lg);
+    transition: color var(--duration-fast);
+  }
+
+  .back-link:hover { color: var(--text-primary); }
+
+  .category-hero {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-sm);
+  }
+
+  .category-emoji {
+    font-size: 3rem;
+  }
+
+  .category-title {
+    font-size: var(--text-3xl);
+  }
+
+  .post-count {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+    font-family: var(--font-mono);
+    margin-bottom: var(--space-xl);
+  }
+
+  .posts-grid {
+    display: grid;
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 640px) {
+    .posts-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

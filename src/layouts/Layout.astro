@@ -1,0 +1,361 @@
+---
+// 奉天F4Club — Main Layout v2
+interface Props {
+  title?: string;
+  description?: string;
+  lang?: 'zh' | 'en';
+}
+
+const user = (Astro.locals as any).user;
+const { title = '奉天F4Club', description = '前同事们的秘密基地', lang = 'zh' } = Astro.props;
+const fullTitle = title === '奉天F4Club' ? title : `${title} — 奉天F4Club`;
+
+const navLinks = [
+  { href: '/category/gaming',  emoji: '🎮', zh: '游戏', en: 'Gaming',   colorVar: 'var(--cat-gaming)' },
+  { href: '/category/movies',  emoji: '🎬', zh: '电影', en: 'Movies',   colorVar: 'var(--cat-movies)' },
+  { href: '/category/sports',  emoji: '🏀', zh: '运动', en: 'Sports',   colorVar: 'var(--cat-sports)' },
+  { href: '/category/english', emoji: '📖', zh: '英语', en: 'English',  colorVar: 'var(--cat-english)' },
+];
+
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang={lang === 'zh' ? 'zh-CN' : 'en'}>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content={description} />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>{fullTitle}</title>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+  <div class="nav-inner container">
+    <!-- Brand -->
+    <a href="/" class="nav-brand">
+      <span class="brand-icon">F4</span>
+      <span class="brand-sub">Club</span>
+      <span class="brand-dot"></span>
+    </a>
+
+    <!-- Links -->
+    <div class="nav-links" id="nav-links">
+      {navLinks.map(link => (
+        <a
+          href={link.href}
+          class={`nav-link ${currentPath === link.href ? 'active' : ''}`}
+          style={`--link-color: ${link.colorVar}`}
+        >
+          <span class="nav-link-emoji">{link.emoji}</span>
+          <span class="nav-link-text">{lang === 'zh' ? link.zh : link.en}</span>
+        </a>
+      ))}
+    </div>
+
+    <!-- Actions -->
+    <div class="nav-actions">
+      <button class="nav-icon-btn" id="lang-toggle" title="切换语言 / Switch Language">
+        <span id="lang-label">{lang === 'zh' ? 'EN' : '中'}</span>
+      </button>
+      <button class="nav-icon-btn" id="theme-toggle" title="切换主题">
+        <span id="theme-icon">🌙</span>
+      </button>
+
+      {user ? (
+        <div class="nav-user-area">
+          <a href="/post/new" class="btn btn-primary btn-sm nav-post-btn">
+            <span>✦</span>
+            <span>{lang === 'zh' ? '发帖' : 'Post'}</span>
+          </a>
+          <a href={`/member/${user.nickname}`} class="nav-avatar">
+            <span class="nav-avatar-emoji">{user.avatar_emoji}</span>
+            <span class="nav-avatar-name">{user.nickname}</span>
+          </a>
+          <a href="/api/auth/logout" class="nav-logout" title={lang === 'zh' ? '退出' : 'Logout'}>⏏</a>
+        </div>
+      ) : (
+        <a href="/login" class="btn btn-ghost btn-sm">
+          {lang === 'zh' ? '登录' : 'Login'}
+        </a>
+      )}
+
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="菜单">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Main -->
+<main class="main-content">
+  <slot />
+</main>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <span class="footer-f4">F4</span>Club
+    </div>
+    <p class="footer-text">
+      {lang === 'zh' ? '奉天·前同事们的秘密基地 🎮🎬🏀📖' : 'Fengtian · Our Secret Hangout 🎮🎬🏀📖'}
+    </p>
+    <p class="footer-copy">© 2026 F4Club</p>
+  </div>
+</footer>
+
+<script is:inline>
+(function(){
+  // Theme
+  const themeBtn = document.getElementById('theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.setAttribute('data-theme','light');
+    themeIcon.textContent = '☀️';
+  }
+  themeBtn?.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme','dark');
+      themeIcon.textContent = '🌙';
+    } else {
+      document.documentElement.setAttribute('data-theme','light');
+      localStorage.setItem('theme','light');
+      themeIcon.textContent = '☀️';
+    }
+  });
+
+  // Language
+  const langBtn = document.getElementById('lang-toggle');
+  langBtn?.addEventListener('click', () => {
+    const url = new URL(window.location.href);
+    const cur = url.searchParams.get('lang') || 'zh';
+    url.searchParams.set('lang', cur === 'zh' ? 'en' : 'zh');
+    window.location.href = url.toString();
+  });
+
+  // Mobile hamburger
+  const ham = document.getElementById('nav-hamburger');
+  const navLinks = document.getElementById('nav-links');
+  ham?.addEventListener('click', () => {
+    const open = navLinks.classList.toggle('open');
+    ham.classList.toggle('open', open);
+  });
+})();
+</script>
+
+<style>
+/* ---- NAV ---- */
+.nav {
+  position: sticky; top: 0; z-index: 100;
+  height: var(--nav-height);
+  background: rgba(8,9,14,0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--border-subtle);
+}
+[data-theme="light"] .nav {
+  background: rgba(244,245,251,0.82);
+}
+
+.nav-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+
+/* Brand */
+.nav-brand {
+  display: flex; align-items: center; gap: 4px;
+  font-weight: 800; font-size: 1.2rem;
+  letter-spacing: -0.04em;
+  flex-shrink: 0;
+  position: relative;
+}
+.brand-icon {
+  background: linear-gradient(135deg, #e94560, #6c5ce7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 1.35rem;
+}
+.brand-sub { color: var(--text-secondary); font-weight: 400; font-size: 1rem; }
+.brand-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse-dot 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.4; transform:scale(0.7); }
+}
+
+/* Nav links */
+.nav-links {
+  display: flex; align-items: center;
+  gap: 2px; flex: 1;
+  overflow-x: auto;
+  -ms-overflow-style: none; scrollbar-width: none;
+}
+.nav-links::-webkit-scrollbar { display: none; }
+
+.nav-link {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  transition: all var(--duration-normal) var(--ease-out);
+  border: 1px solid transparent;
+}
+.nav-link-emoji { font-size: 1rem; transition: transform var(--duration-fast) var(--ease-spring); }
+.nav-link:hover {
+  color: var(--link-color);
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(255,255,255,0.06);
+}
+.nav-link:hover .nav-link-emoji { transform: scale(1.2) rotate(-5deg); }
+.nav-link.active {
+  color: var(--link-color);
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.1);
+  font-weight: 600;
+}
+
+/* Actions */
+.nav-actions {
+  display: flex; align-items: center; gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.nav-icon-btn {
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast);
+  letter-spacing: 0.05em;
+}
+.nav-icon-btn:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.nav-post-btn { gap: 4px; }
+
+.nav-user-area {
+  display: flex; align-items: center; gap: var(--space-sm);
+}
+
+.nav-avatar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  transition: all var(--duration-fast);
+}
+.nav-avatar:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-elevated);
+}
+.nav-avatar-emoji { font-size: 1.1rem; }
+.nav-avatar-name { font-weight: 500; color: var(--text-primary); }
+
+.nav-logout {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  transition: color var(--duration-fast);
+  border: 1px solid transparent;
+}
+.nav-logout:hover { color: var(--accent); border-color: var(--border-subtle); }
+
+/* Hamburger */
+.nav-hamburger {
+  display: none;
+  flex-direction: column; justify-content: center; gap: 5px;
+  width: 34px; height: 34px;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  transition: background var(--duration-fast);
+}
+.nav-hamburger:hover { background: var(--bg-elevated); }
+.nav-hamburger span {
+  display: block;
+  width: 100%; height: 2px;
+  background: var(--text-secondary);
+  border-radius: 2px;
+  transition: all var(--duration-normal) var(--ease-out);
+  transform-origin: center;
+}
+.nav-hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+.nav-hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+
+@media (max-width: 720px) {
+  .nav-hamburger { display: flex; }
+  .nav-links {
+    display: none;
+    position: fixed; top: var(--nav-height); left: 0; right: 0;
+    flex-direction: column; align-items: stretch;
+    padding: var(--space-md);
+    background: var(--bg-glass);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 4px; z-index: 99;
+  }
+  .nav-links.open { display: flex; }
+  .nav-link { padding: 10px var(--space-md); border-radius: var(--radius-md); }
+  .nav-link-text { font-size: var(--text-base); }
+}
+
+/* ---- MAIN ---- */
+.main-content {
+  position: relative; z-index: 1;
+  min-height: calc(100vh - var(--nav-height) - 100px);
+  padding: var(--space-xl) 0 var(--space-3xl);
+}
+
+/* ---- FOOTER ---- */
+.footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border-subtle);
+  padding: var(--space-xl) 0;
+  background: var(--bg-secondary);
+}
+.footer-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--space-sm); text-align: center;
+}
+.footer-brand {
+  font-size: 1.1rem; font-weight: 800; letter-spacing: -0.03em;
+}
+.footer-f4 {
+  background: linear-gradient(135deg, #e94560, #6c5ce7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.footer-text { font-size: var(--text-sm); color: var(--text-muted); }
+.footer-copy { font-size: var(--text-xs); color: var(--text-muted); font-family: var(--font-mono); }
+</style>
+</body>
+</html>

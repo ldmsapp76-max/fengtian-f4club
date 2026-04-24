@@ -1,0 +1,23 @@
+{
+  "name": "fengtian-f4club",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "奉天F4Club - Private community for four former game dev colleagues",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "db:init": "wrangler d1 execute f4club-db --local --file=db/schema.sql"
+  },
+  "dependencies": {
+    "astro": "^5.0.0",
+    "@astrojs/cloudflare": "^12.0.0",
+    "marked": "^15.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "wrangler": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}

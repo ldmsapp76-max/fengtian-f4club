@@ -1,0 +1,366 @@
+---
+// 奉天F4Club — Login Page
+import Layout from '../layouts/Layout.astro';
+import { getAllUsers } from '../lib/db';
+
+const user = (Astro.locals as any).user;
+if (user) {
+  return Astro.redirect('/');
+}
+
+const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
+
+// Get users for display
+let members: any[] = [];
+try {
+  const runtime = (Astro.locals as any).runtime;
+  if (runtime?.env?.DB) {
+    members = await getAllUsers(runtime.env.DB);
+  }
+} catch (e) {
+  console.error('Failed to load members:', e);
+}
+
+// Fallback members if DB not ready
+if (members.length === 0) {
+  members = [
+    { id: 1, nickname: '佛', avatar_emoji: '🧘', role: 'programmer' },
+    { id: 2, nickname: '猛将', avatar_emoji: '⚔️', role: 'programmer' },
+    { id: 3, nickname: '陈少', avatar_emoji: '🎯', role: 'programmer' },
+    { id: 4, nickname: '大壮', avatar_emoji: '🎨', role: 'artist' },
+  ];
+}
+---
+
+<Layout title={lang === 'zh' ? '登录' : 'Login'} lang={lang}>
+  <div class="login-page">
+    <div class="login-card animate-slide-up">
+      <!-- Logo -->
+      <div class="login-logo">
+        <span class="logo-text">F4</span>
+        <span class="logo-sub">Club</span>
+      </div>
+
+      <h1 class="login-title">{lang === 'zh' ? '欢迎回来' : 'Welcome Back'}</h1>
+      <p class="login-subtitle">{lang === 'zh' ? '选择你的身份' : 'Choose your identity'}</p>
+
+      <!-- Member Selection -->
+      <div class="member-grid" id="member-grid">
+        {members.map((m) => (
+          <button
+            class="member-select"
+            data-nickname={m.nickname}
+            type="button"
+          >
+            <span class="member-emoji">{m.avatar_emoji}</span>
+            <span class="member-name">{m.nickname}</span>
+            <span class="member-role">
+              {m.role === 'artist' ? (lang === 'zh' ? '美术' : 'Art') : (lang === 'zh' ? '程序' : 'Dev')}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      <!-- Password Input (hidden initially) -->
+      <form class="login-form" id="login-form" style="display:none">
+        <div class="selected-user" id="selected-user">
+          <span class="selected-emoji" id="selected-emoji"></span>
+          <span class="selected-name" id="selected-name"></span>
+          <button type="button" class="change-user" id="change-user">
+            {lang === 'zh' ? '换人' : 'Change'}
+          </button>
+        </div>
+
+        <div class="form-group">
+          <input
+            type="password"
+            class="input password-input"
+            id="password-input"
+            placeholder={lang === 'zh' ? '输入密码' : 'Enter password'}
+            autocomplete="current-password"
+          />
+        </div>
+
+        <div class="error-msg" id="error-msg" style="display:none">
+          {lang === 'zh' ? '密码错误' : 'Wrong password'}
+        </div>
+
+        <button type="submit" class="btn btn-primary login-btn" id="login-btn">
+          {lang === 'zh' ? '进入' : 'Enter'}
+        </button>
+      </form>
+    </div>
+
+    <!-- Background decoration -->
+    <div class="login-bg">
+      <div class="bg-circle c1"></div>
+      <div class="bg-circle c2"></div>
+      <div class="bg-circle c3"></div>
+    </div>
+  </div>
+</Layout>
+
+<script is:inline>
+  let selectedNickname = null;
+
+  const grid = document.getElementById('member-grid');
+  const form = document.getElementById('login-form');
+  const passwordInput = document.getElementById('password-input');
+  const selectedEmoji = document.getElementById('selected-emoji');
+  const selectedName = document.getElementById('selected-name');
+  const changeBtn = document.getElementById('change-user');
+  const errorMsg = document.getElementById('error-msg');
+  const loginBtn = document.getElementById('login-btn');
+
+  // Member selection
+  grid?.querySelectorAll('.member-select').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedNickname = btn.dataset.nickname;
+      selectedEmoji.textContent = btn.querySelector('.member-emoji').textContent;
+      selectedName.textContent = selectedNickname;
+
+      grid.style.display = 'none';
+      form.style.display = 'block';
+      passwordInput.focus();
+      errorMsg.style.display = 'none';
+    });
+  });
+
+  // Change user
+  changeBtn?.addEventListener('click', () => {
+    grid.style.display = 'grid';
+    form.style.display = 'none';
+    selectedNickname = null;
+    passwordInput.value = '';
+    errorMsg.style.display = 'none';
+  });
+
+  // Submit
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const password = passwordInput.value;
+    if (!password || !selectedNickname) return;
+
+    loginBtn.disabled = true;
+    loginBtn.textContent = '...';
+    errorMsg.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: selectedNickname, password }),
+      });
+
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        errorMsg.style.display = 'block';
+        passwordInput.value = '';
+        passwordInput.focus();
+      }
+    } catch (err) {
+      errorMsg.textContent = 'Network error';
+      errorMsg.style.display = 'block';
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = document.documentElement.lang === 'zh-CN' ? '进入' : 'Enter';
+    }
+  });
+</script>
+
+<style>
+  .login-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--nav-height) - 100px);
+    padding: var(--space-lg);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .login-card {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 400px;
+    padding: var(--space-2xl);
+    text-align: center;
+  }
+
+  .login-logo {
+    margin-bottom: var(--space-xl);
+  }
+
+  .logo-text {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #e94560, #6c5ce7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.05em;
+  }
+
+  .logo-sub {
+    font-size: 1.5rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    margin-left: 2px;
+  }
+
+  .login-title {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-xs);
+  }
+
+  .login-subtitle {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-xl);
+  }
+
+  .member-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+
+  .member-select {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--duration-normal) var(--ease-out);
+  }
+
+  .member-select:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .member-emoji {
+    font-size: 2.5rem;
+  }
+
+  .member-name {
+    font-size: var(--text-base);
+    font-weight: 600;
+  }
+
+  .member-role {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .login-form {
+    text-align: left;
+  }
+
+  .selected-user {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-lg);
+  }
+
+  .selected-emoji {
+    font-size: 2rem;
+  }
+
+  .selected-name {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .change-user {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-sm);
+    transition: color var(--duration-fast);
+    background: none;
+    border: none;
+  }
+
+  .change-user:hover {
+    color: var(--accent);
+  }
+
+  .password-input {
+    text-align: center;
+    font-size: var(--text-lg);
+    letter-spacing: 0.1em;
+    padding: var(--space-md);
+  }
+
+  .error-msg {
+    text-align: center;
+    color: var(--accent);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-md);
+    animation: fadeIn var(--duration-fast);
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: var(--space-md);
+    font-size: var(--text-base);
+  }
+
+  /* Background decorations */
+  .login-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .bg-circle {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+  }
+
+  .c1 {
+    width: 400px;
+    height: 400px;
+    background: var(--cat-gaming);
+    top: -100px;
+    right: -100px;
+  }
+
+  .c2 {
+    width: 300px;
+    height: 300px;
+    background: var(--accent);
+    bottom: -80px;
+    left: -80px;
+  }
+
+  .c3 {
+    width: 200px;
+    height: 200px;
+    background: var(--cat-sports);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+</style>

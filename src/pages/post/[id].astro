@@ -1,0 +1,209 @@
+---
+// 奉天F4Club — Post Detail Page
+import Layout from '../../layouts/Layout.astro';
+import MemberBadge from '../../components/MemberBadge.astro';
+import CategoryTag from '../../components/CategoryTag.astro';
+import CommentSection from '../../components/CommentSection.astro';
+import { getPostById, getCommentsByPostId } from '../../lib/db';
+import { timeAgo } from '../../lib/i18n';
+import { marked } from 'marked';
+
+const { id } = Astro.params;
+const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
+const user = (Astro.locals as any).user;
+
+let post: any = null;
+let comments: any[] = [];
+
+try {
+  const runtime = (Astro.locals as any).runtime;
+  if (runtime?.env?.DB) {
+    const DB = runtime.env.DB;
+    post = await getPostById(DB, Number(id), user?.id);
+    if (post) {
+      comments = await getCommentsByPostId(DB, Number(id));
+    }
+  }
+} catch (e) {
+  console.error('Failed to load post:', e);
+}
+
+if (!post) {
+  return Astro.redirect('/');
+}
+
+// Render markdown content
+const htmlContent = marked(post.content);
+const isAuthor = user && user.id === post.author_id;
+---
+
+<Layout title={post.title} lang={lang}>
+  <article class="container page-content">
+    <div class="post-detail">
+      <!-- Back link -->
+      <a href="/" class="back-link animate-fade-in">
+        ← {lang === 'zh' ? '返回' : 'Back'}
+      </a>
+
+      <!-- Post Header -->
+      <header class="post-header animate-fade-in delay-1">
+        <div class="post-meta">
+          <MemberBadge
+            nickname={post.author_nickname}
+            emoji={post.author_emoji}
+            role={post.author_role}
+            lang={lang}
+          />
+          <span class="post-date">{timeAgo(post.created_at, lang)}</span>
+        </div>
+
+        <h1 class="post-title">{post.title}</h1>
+
+        <div class="post-tags">
+          <CategoryTag category={post.category} sportType={post.sport_type} lang={lang} />
+        </div>
+      </header>
+
+      <!-- Post Content -->
+      <div class="prose animate-fade-in delay-2" set:html={htmlContent} />
+
+      <!-- Post Actions -->
+      <div class="post-actions animate-fade-in delay-3">
+        <button
+          class={`like-btn ${post.liked_by_user ? 'liked' : ''}`}
+          id="like-btn"
+          data-post-id={post.id}
+        >
+          <span class="heart">{post.liked_by_user ? '❤️' : '🤍'}</span>
+          <span id="like-count">{post.like_count || 0}</span>
+          <span>{lang === 'zh' ? '赞' : 'Like'}</span>
+        </button>
+
+        {isAuthor && (
+          <div class="author-actions">
+            <button class="btn btn-ghost btn-sm" id="delete-btn" data-post-id={post.id}>
+              {lang === 'zh' ? '🗑 删除' : '🗑 Delete'}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <!-- Comments -->
+      <CommentSection
+        comments={comments}
+        postId={post.id}
+        user={user}
+        lang={lang}
+      />
+    </div>
+  </article>
+</Layout>
+
+<script is:inline>
+  // Like toggle
+  const likeBtn = document.getElementById('like-btn');
+  const likeCount = document.getElementById('like-count');
+
+  likeBtn?.addEventListener('click', async () => {
+    const postId = likeBtn.dataset.postId;
+    try {
+      const res = await fetch('/api/likes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: Number(postId) }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        likeCount.textContent = data.count;
+        likeBtn.classList.toggle('liked', data.liked);
+        const heart = likeBtn.querySelector('.heart');
+        heart.textContent = data.liked ? '❤️' : '🤍';
+      } else if (res.status === 401) {
+        window.location.href = '/login';
+      }
+    } catch (err) {
+      console.error('Like error:', err);
+    }
+  });
+
+  // Delete post
+  const deleteBtn = document.getElementById('delete-btn');
+  deleteBtn?.addEventListener('click', async () => {
+    const msg = document.documentElement.lang === 'zh-CN'
+      ? '确定要删除这篇帖子吗？'
+      : 'Delete this post?';
+    if (!confirm(msg)) return;
+
+    const postId = deleteBtn.dataset.postId;
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+      if (res.ok) {
+        window.location.href = '/';
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+    }
+  });
+</script>
+
+<style>
+  .post-detail {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .back-link {
+    display: inline-block;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-xl);
+    transition: color var(--duration-fast);
+  }
+
+  .back-link:hover {
+    color: var(--text-primary);
+  }
+
+  .post-header {
+    margin-bottom: var(--space-xl);
+  }
+
+  .post-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+  }
+
+  .post-date {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .post-title {
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    line-height: var(--leading-tight);
+    margin-bottom: var(--space-md);
+  }
+
+  .post-tags {
+    display: flex;
+    gap: var(--space-sm);
+  }
+
+  .post-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md) 0;
+    margin-top: var(--space-xl);
+  }
+
+  .author-actions {
+    display: flex;
+    gap: var(--space-sm);
+  }
+</style>

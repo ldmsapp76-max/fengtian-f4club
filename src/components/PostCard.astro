@@ -1,0 +1,134 @@
+---
+// 奉天F4Club — Post Card Component
+import MemberBadge from './MemberBadge.astro';
+import CategoryTag from './CategoryTag.astro';
+import type { Post } from '../lib/db';
+import { timeAgo } from '../lib/i18n';
+
+interface Props {
+  post: Post;
+  lang?: 'zh' | 'en';
+  index?: number;
+}
+
+const { post, lang = 'zh', index = 0 } = Astro.props;
+
+// Extract first image URL from markdown content
+const firstImageMatch = post.content.match(/!\[.*?\]\((.*?)\)/);
+const thumbnailUrl = firstImageMatch ? firstImageMatch[1] : null;
+
+// Truncate content for preview
+const preview = post.content
+  .replace(/!\[.*?\]\(.*?\)/g, '') // strip image markdown
+  .replace(/[#*`\[\]!()]/g, '') // strip other markdown
+  .replace(/\n+/g, ' ')
+  .slice(0, 150)
+  .trim();
+---
+
+<article class={`post-card animate-fade-in delay-${Math.min(index + 1, 5)}`}>
+  <a href={`/post/${post.id}`} class="post-card-link">
+    {thumbnailUrl && (
+      <div class="post-thumbnail">
+        <img src={thumbnailUrl} alt="" loading="lazy" />
+      </div>
+    )}
+
+    <div class="post-card-body">
+      <div class="post-card-header">
+        <MemberBadge
+          nickname={post.author_nickname || ''}
+          emoji={post.author_emoji || '👤'}
+          size="sm"
+          linked={false}
+        />
+        <span class="post-time">{timeAgo(post.created_at, lang)}</span>
+      </div>
+
+      <h3 class="post-title">{post.title}</h3>
+
+      {preview && <p class="post-preview">{preview}{post.content.length > 150 ? '...' : ''}</p>}
+
+      <div class="post-card-footer">
+        <CategoryTag category={post.category} sportType={post.sport_type} lang={lang} />
+
+        <div class="post-stats">
+          <span class="stat" title={lang === 'zh' ? '赞' : 'Likes'}>
+            ♥ {post.like_count || 0}
+          </span>
+          <span class="stat" title={lang === 'zh' ? '评论' : 'Comments'}>
+            💬 {post.comment_count || 0}
+          </span>
+        </div>
+      </div>
+    </div>
+  </a>
+</article>
+
+<style>
+  .post-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    transition: all var(--duration-normal) var(--ease-out);
+    overflow: hidden;
+  }
+
+  .post-card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-default);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+
+  .post-card-link {
+    display: block;
+    padding: var(--space-lg);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .post-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+  }
+
+  .post-time {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .post-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-sm);
+    line-height: var(--leading-tight);
+    color: var(--text-primary);
+  }
+
+  .post-preview {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-normal);
+    margin-bottom: var(--space-md);
+  }
+
+  .post-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .post-stats {
+    display: flex;
+    gap: var(--space-md);
+  }
+
+  .stat {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+</style>

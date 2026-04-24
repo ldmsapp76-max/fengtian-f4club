@@ -1,0 +1,213 @@
+---
+// 奉天F4Club — Comment Section Component
+import MemberBadge from './MemberBadge.astro';
+import type { Comment } from '../lib/db';
+import { timeAgo } from '../lib/i18n';
+
+interface Props {
+  comments: Comment[];
+  postId: number;
+  user?: { id: number; nickname: string; avatar_emoji: string } | null;
+  lang?: 'zh' | 'en';
+}
+
+const { comments, postId, user, lang = 'zh' } = Astro.props;
+---
+
+<section class="comment-section" id="comments">
+  <h3 class="comment-title">
+    {lang === 'zh' ? '评论' : 'Comments'}
+    <span class="comment-count">{comments.length}</span>
+  </h3>
+
+  <!-- Comment Form -->
+  {user ? (
+    <form class="comment-form" id="comment-form" data-post-id={postId}>
+      <div class="comment-form-header">
+        <span class="comment-avatar">{user.avatar_emoji}</span>
+        <span class="comment-author">{user.nickname}</span>
+      </div>
+      <textarea
+        class="input comment-input"
+        id="comment-input"
+        placeholder={lang === 'zh' ? '说点什么...' : 'Say something...'}
+        rows="3"
+      ></textarea>
+      <div class="comment-form-actions">
+        <button type="submit" class="btn btn-primary btn-sm">
+          {lang === 'zh' ? '发表' : 'Post'}
+        </button>
+      </div>
+    </form>
+  ) : (
+    <div class="comment-login-prompt">
+      <a href="/login" class="btn btn-ghost btn-sm">
+        {lang === 'zh' ? '🔐 登录后才能评论' : '🔐 Login to comment'}
+      </a>
+    </div>
+  )}
+
+  <!-- Comment List -->
+  <div class="comment-list" id="comment-list">
+    {comments.length === 0 ? (
+      <div class="empty-state">
+        <p>{lang === 'zh' ? '还没有评论，来说第一句吧' : 'No comments yet, be the first'}</p>
+      </div>
+    ) : (
+      comments.map((comment) => (
+        <div class="comment-item animate-fade-in">
+          <div class="comment-item-header">
+            <MemberBadge
+              nickname={comment.author_nickname || ''}
+              emoji={comment.author_emoji || '👤'}
+              size="sm"
+            />
+            <span class="comment-time">{timeAgo(comment.created_at, lang)}</span>
+          </div>
+          <div class="comment-content">{comment.content}</div>
+        </div>
+      ))
+    )}
+  </div>
+</section>
+
+<!-- Comment Submit Script -->
+<script is:inline>
+  const form = document.getElementById('comment-form');
+  const input = document.getElementById('comment-input');
+  const list = document.getElementById('comment-list');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const postId = form.dataset.postId;
+    const content = input?.value?.trim();
+    if (!content) return;
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '...';
+
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId: Number(postId), content }),
+      });
+
+      if (res.ok) {
+        // Reload page to show new comment
+        window.location.reload();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to post comment');
+      }
+    } catch (err) {
+      alert('Network error');
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = '发表';
+    }
+  });
+</script>
+
+<style>
+  .comment-section {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .comment-title {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-lg);
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  .comment-count {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    background: var(--bg-elevated);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+  }
+
+  .comment-form {
+    margin-bottom: var(--space-xl);
+  }
+
+  .comment-form-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+
+  .comment-avatar {
+    font-size: 1.5rem;
+  }
+
+  .comment-author {
+    font-size: var(--text-sm);
+    font-weight: 500;
+  }
+
+  .comment-input {
+    font-family: var(--font-sans);
+    min-height: 80px;
+  }
+
+  .comment-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-sm);
+  }
+
+  .comment-login-prompt {
+    text-align: center;
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--border-default);
+  }
+
+  .comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .comment-item {
+    padding: var(--space-md);
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .comment-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+  }
+
+  .comment-time {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .comment-content {
+    font-size: var(--text-sm);
+    line-height: var(--leading-relaxed);
+    color: var(--text-secondary);
+  }
+
+  .empty-state {
+    padding: var(--space-xl);
+  }
+</style>

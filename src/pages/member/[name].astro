@@ -1,0 +1,177 @@
+---
+// 奉天F4Club — Member Profile Page
+import Layout from '../../layouts/Layout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getUserByNickname, getPosts, getPostCount } from '../../lib/db';
+import type { Post, User } from '../../lib/db';
+
+const { name } = Astro.params;
+const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
+const currentUser = (Astro.locals as any).user;
+
+let member: User | null = null;
+let posts: Post[] = [];
+let postCount = 0;
+
+try {
+  const runtime = (Astro.locals as any).runtime;
+  if (runtime?.env?.DB && name) {
+    const DB = runtime.env.DB;
+    member = await getUserByNickname(DB, decodeURIComponent(name));
+    if (member) {
+      posts = await getPosts(DB, { authorId: member.id, userId: currentUser?.id });
+      postCount = await getPostCount(DB, member.id);
+    }
+  }
+} catch (e) {
+  console.error('Failed to load member:', e);
+}
+
+if (!member) {
+  return Astro.redirect('/');
+}
+
+const roleLabel = member.role === 'artist'
+  ? (lang === 'zh' ? '美术' : 'Artist')
+  : (lang === 'zh' ? '程序' : 'Programmer');
+
+const memberColors: Record<string, string> = {
+  '佛': '#f39c12',
+  '猛将': '#e74c3c',
+  '陈少': '#3498db',
+  '大壮': '#2ecc71',
+};
+
+const color = memberColors[member.nickname] || '#e94560';
+---
+
+<Layout title={member.nickname} lang={lang}>
+  <div class="container page-content">
+    <a href="/" class="back-link animate-fade-in">← {lang === 'zh' ? '返回' : 'Back'}</a>
+
+    <!-- Member Profile Card -->
+    <div class="profile-card animate-slide-up" style={`--member-accent: ${color}`}>
+      <div class="profile-emoji">{member.avatar_emoji}</div>
+      <h1 class="profile-name">{member.nickname}</h1>
+      <span class="profile-role">{roleLabel}</span>
+      <div class="profile-stats">
+        <span class="stat-item">
+          <span class="stat-num">{postCount}</span>
+          <span class="stat-label">{lang === 'zh' ? '帖子' : 'posts'}</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Member's Posts -->
+    <h2 class="section-title animate-fade-in delay-2">
+      {lang === 'zh' ? `${member.nickname}的帖子` : `Posts by ${member.nickname}`}
+    </h2>
+
+    {posts.length > 0 ? (
+      <div class="posts-grid">
+        {posts.map((post, i) => (
+          <PostCard post={post} lang={lang} index={i} />
+        ))}
+      </div>
+    ) : (
+      <div class="empty-state animate-fade-in">
+        <div class="icon">{member.avatar_emoji}</div>
+        <p>{lang === 'zh' ? '还没有发过帖子' : 'No posts yet'}</p>
+      </div>
+    )}
+  </div>
+</Layout>
+
+<style>
+  .back-link {
+    display: inline-block;
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-xl);
+    transition: color var(--duration-fast);
+  }
+
+  .back-link:hover { color: var(--text-primary); }
+
+  .profile-card {
+    text-align: center;
+    padding: var(--space-2xl);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-2xl);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--member-accent);
+  }
+
+  .profile-emoji {
+    font-size: 4rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .profile-name {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--member-accent);
+    margin-bottom: var(--space-xs);
+  }
+
+  .profile-role {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    display: block;
+    margin-bottom: var(--space-lg);
+  }
+
+  .profile-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-xl);
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .stat-num {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .stat-label {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  .section-title {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-lg);
+    color: var(--text-secondary);
+  }
+
+  .posts-grid {
+    display: grid;
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 640px) {
+    .posts-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+</style>

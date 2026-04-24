@@ -1,0 +1,44 @@
+---
+// 奉天F4Club — Category Tag Component
+interface Props {
+  category: string;
+  sportType?: string | null;
+  lang?: 'zh' | 'en';
+}
+
+const { category, sportType, lang = 'zh' } = Astro.props;
+
+const categoryConfig: Record<string, { emoji: string; zh: string; en: string; cssClass: string }> = {
+  gaming: { emoji: '🎮', zh: '游戏', en: 'Gaming', cssClass: 'tag-gaming' },
+  movies: { emoji: '🎬', zh: '电影', en: 'Movies', cssClass: 'tag-movies' },
+  sports: { emoji: '🏀', zh: '运动', en: 'Sports', cssClass: 'tag-sports' },
+  english: { emoji: '📖', zh: '学英语', en: 'English', cssClass: 'tag-english' },
+};
+
+const sportLabels: Record<string, { zh: string; en: string }> = {
+  basketball: { zh: '篮球', en: 'Basketball' },
+  badminton: { zh: '羽毛球', en: 'Badminton' },
+  marathon: { zh: '马拉松', en: 'Marathon' },
+};
+
+const config = categoryConfig[category] || categoryConfig.gaming;
+const sportLabel = sportType ? sportLabels[sportType] : null;
+---
+
+<a href={`/category/${category}`} class={`tag ${config.cssClass}`}>
+  <span>{config.emoji}</span>
+  <span>{config[lang]}</span>
+  {sportLabel && <span>· {sportLabel[lang]}</span>}
+</a>
+
+<style>
+  .tag {
+    text-decoration: none;
+    transition: all var(--duration-fast);
+  }
+
+  .tag:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.2);
+  }
+</style>

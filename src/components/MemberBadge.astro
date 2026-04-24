@@ -1,0 +1,82 @@
+---
+// 奉天F4Club — Member Badge Component
+interface Props {
+  nickname: string;
+  emoji: string;
+  role?: string;
+  size?: 'sm' | 'md' | 'lg';
+  linked?: boolean;
+  lang?: 'zh' | 'en';
+}
+
+const { nickname, emoji, role, size = 'md', linked = true, lang = 'zh' } = Astro.props;
+
+const memberColors: Record<string, string> = {
+  '佛': 'var(--member-fo)',
+  '猛将': 'var(--member-mengjiang)',
+  '陈少': 'var(--member-chenshao)',
+  '大壮': 'var(--member-dazhuang)',
+};
+
+const color = memberColors[nickname] || 'var(--text-primary)';
+
+const roleLabels: Record<string, Record<string, string>> = {
+  programmer: { zh: '程序', en: 'Dev' },
+  artist: { zh: '美术', en: 'Art' },
+};
+
+const sizeClasses: Record<string, string> = {
+  sm: 'badge-sm',
+  md: 'badge-md',
+  lg: 'badge-lg',
+};
+---
+
+{linked ? (
+  <a href={`/member/${nickname}`} class={`member-badge ${sizeClasses[size]}`} style={`--member-color: ${color}`}>
+    <span class="emoji">{emoji}</span>
+    <span class="name">{nickname}</span>
+    {role && <span class="role">{roleLabels[role]?.[lang] || role}</span>}
+  </a>
+) : (
+  <span class={`member-badge ${sizeClasses[size]}`} style={`--member-color: ${color}`}>
+    <span class="emoji">{emoji}</span>
+    <span class="name">{nickname}</span>
+    {role && <span class="role">{roleLabels[role]?.[lang] || role}</span>}
+  </span>
+)}
+
+<style>
+  .member-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+    transition: opacity var(--duration-fast);
+  }
+
+  a.member-badge:hover {
+    opacity: 0.8;
+  }
+
+  .name {
+    color: var(--member-color);
+    font-weight: 500;
+  }
+
+  .role {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .badge-sm .emoji { font-size: 1rem; }
+  .badge-sm .name { font-size: var(--text-xs); }
+
+  .badge-md .emoji { font-size: 1.2rem; }
+  .badge-md .name { font-size: var(--text-sm); }
+
+  .badge-lg .emoji { font-size: 2rem; }
+  .badge-lg .name { font-size: var(--text-xl); }
+  .badge-lg .role { font-size: var(--text-sm); }
+</style>
