@@ -8,7 +8,9 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "db:init": "wrangler d1 execute f4club-db --local --file=db/schema.sql -y"
+    "db:init": "wrangler d1 execute f4club-db --local --file=db/schema.sql -y",
+    "db:init:remote": "wrangler d1 execute f4club-db --remote --file=db/schema.sql -y",
+    "db:verify:remote": "wrangler d1 execute f4club-db --remote --command=\"SELECT id, nickname, role, avatar_emoji, password_hash != '' AS has_password FROM users ORDER BY id\" -y"
   },
   "dependencies": {
     "astro": "^5.0.0",
