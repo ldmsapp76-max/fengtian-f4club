@@ -9,7 +9,7 @@ database_id = "ee96b330-fb2b-4746-a26d-ba5cb3f70ab9"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "f4club-sessions"
+id = "8ffdbbeac95247b18cd774886e05e2bf"
 
 [[r2_buckets]]
 binding = "IMAGES"
