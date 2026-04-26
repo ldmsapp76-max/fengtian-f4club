@@ -5,7 +5,7 @@ compatibility_date = "2024-12-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "f4club-db"
-database_id = "local"
+database_id = "ee96b330-fb2b-4746-a26d-ba5cb3f70ab9"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
