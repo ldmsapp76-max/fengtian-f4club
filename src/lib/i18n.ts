@@ -88,7 +88,12 @@ export function getRoleLabel(role: string, lang: Lang = 'zh'): string {
 
 export function timeAgo(date: string | Date, lang: Lang = 'zh'): string {
   const now = Date.now();
-  const then = new Date(date).getTime();
+  // SQLite CURRENT_TIMESTAMP 返回 "YYYY-MM-DD HH:MM:SS"（UTC），
+  // 将空格换成 T 并加 Z 后缀，确保 new Date() 当作 UTC 解析
+  const normalized = typeof date === 'string'
+    ? date.replace(' ', 'T').replace(/Z?$/, 'Z')
+    : date;
+  const then = new Date(normalized).getTime();
   const diff = Math.floor((now - then) / 1000);
 
   if (diff < 60) return lang === 'zh' ? '刚刚' : 'just now';

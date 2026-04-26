@@ -1,6 +1,6 @@
 // 奉天F4Club — Comments API
 import type { APIRoute } from 'astro';
-import { createComment, deleteComment } from '../../../lib/db';
+import { createComment, deleteComment, getCommentById } from '../../../lib/db';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = (locals as any).user;
@@ -58,8 +58,31 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
   try {
     const body = await request.json();
     const { commentId } = body;
+    const id = Number(commentId);
 
-    await deleteComment(DB, Number(commentId));
+    if (!Number.isInteger(id) || id <= 0) {
+      return new Response(JSON.stringify({ error: 'Invalid commentId' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const comment = await getCommentById(DB, id);
+    if (!comment) {
+      return new Response(JSON.stringify({ error: 'Comment not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (comment.author_id !== user.id && comment.post_author_id !== user.id) {
+      return new Response(JSON.stringify({ error: 'Not authorized' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    await deleteComment(DB, id);
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

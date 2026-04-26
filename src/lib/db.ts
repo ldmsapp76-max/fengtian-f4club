@@ -39,6 +39,10 @@ export interface Comment {
   author_emoji?: string;
 }
 
+export interface CommentWithPostAuthor extends Comment {
+  post_author_id: number;
+}
+
 // ---- Users ----
 
 export async function getUserByNickname(db: D1Database, nickname: string): Promise<User | null> {
@@ -174,6 +178,19 @@ export async function getCommentsByPostId(db: D1Database, postId: number): Promi
     .bind(postId)
     .all<Comment>();
   return result.results || [];
+}
+
+export async function getCommentById(db: D1Database, id: number): Promise<CommentWithPostAuthor | null> {
+  const result = await db
+    .prepare(`
+      SELECT c.*, p.author_id as post_author_id
+      FROM comments c
+      JOIN posts p ON c.post_id = p.id
+      WHERE c.id = ?
+    `)
+    .bind(id)
+    .first<CommentWithPostAuthor>();
+  return result || null;
 }
 
 export async function createComment(

@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "db:init": "wrangler d1 execute f4club-db --local --file=db/schema.sql"
+    "db:init": "wrangler d1 execute f4club-db --local --file=db/schema.sql -y"
   },
   "dependencies": {
     "astro": "^5.0.0",

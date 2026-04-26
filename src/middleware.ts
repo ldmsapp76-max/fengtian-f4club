@@ -36,5 +36,23 @@ export const onRequest = defineMiddleware(async (context, next) => {
     }
   }
 
+  // 🔒 Route guard — guests must log in to access any page
+  const url = new URL(request.url);
+  const pathname = url.pathname;
+
+  // Public routes: login page and all API endpoints
+  const isPublic =
+    pathname === '/login' ||
+    pathname.startsWith('/api/');
+
+  if (!isPublic && !(locals as any).user) {
+    // Preserve the original URL so we can redirect back after login
+    const redirectTo = encodeURIComponent(pathname + url.search);
+    return Response.redirect(
+      new URL(`/login?redirect=${redirectTo}`, request.url),
+      302,
+    );
+  }
+
   return next();
 });

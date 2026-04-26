@@ -1,5 +1,5 @@
 ---
-// 奉天F4Club — Home Page (Feed)
+// 奉天F4Club - Home Feed
 import Layout from '../layouts/Layout.astro';
 import PostCard from '../components/PostCard.astro';
 import { getPosts, getAllUsers } from '../lib/db';
@@ -27,134 +27,319 @@ try {
 }
 
 const categories = [
-  { key: '', label: lang === 'zh' ? '全部' : 'All', emoji: '✦' },
-  { key: 'gaming', label: lang === 'zh' ? '游戏' : 'Gaming', emoji: '🎮' },
-  { key: 'movies', label: lang === 'zh' ? '电影' : 'Movies', emoji: '🎬' },
-  { key: 'sports', label: lang === 'zh' ? '运动' : 'Sports', emoji: '🏀' },
-  { key: 'english', label: lang === 'zh' ? '英语' : 'English', emoji: '📖' },
+  { key: '', label: lang === 'zh' ? '全部' : 'All', emoji: '✦', tone: 'all' },
+  { key: 'gaming', label: lang === 'zh' ? '游戏' : 'Gaming', emoji: '🎮', tone: 'gaming' },
+  { key: 'movies', label: lang === 'zh' ? '电影' : 'Movies', emoji: '🎬', tone: 'movies' },
+  { key: 'sports', label: lang === 'zh' ? '运动' : 'Sports', emoji: '🏀', tone: 'sports' },
+  { key: 'english', label: lang === 'zh' ? '英语' : 'English', emoji: '📚', tone: 'english' },
 ];
+
+const activeCategory = categories.find((cat) => cat.key === category) || categories[0];
+const heroSubtitle = lang === 'zh'
+  ? '四个老同事的私密会客厅，游戏、电影、运动和英语都可以随手开聊。'
+  : 'A private lounge for four former teammates: games, movies, sports, and English notes.';
+const memberCount = members.length || 4;
 ---
 
 <Layout title="奉天F4Club" lang={lang}>
-  <div class="container page-content">
-    <!-- Hero Section -->
-    <header class="hero">
-      <h1 class="hero-title">
-        <span class="hero-f4">F4</span>Club
-      </h1>
-      <p class="hero-desc">
-        {lang === 'zh' ? '前同事们的秘密基地 · 记录有趣的一切' : 'Our Secret Hangout · Logging the Fun Stuff'}
-      </p>
-
-      <!-- Members Row -->
-      {members.length > 0 && (
-        <div class="hero-members">
-          {members.map((m) => (
-            <a href={`/member/${m.nickname}`} class="hero-member" title={m.nickname}>
-              <span class="hero-member-emoji">{m.avatar_emoji}</span>
+  <div class="container page-content home-shell">
+    <header class="home-hero">
+      <div class="hero-shade"></div>
+      <div class="hero-copy">
+        <p class="hero-kicker">FENGTIAN PRIVATE CLUB</p>
+        <h1 class="hero-title">F4Club</h1>
+        <p class="hero-desc">{heroSubtitle}</p>
+        <div class="hero-actions">
+          {user ? (
+            <a href="/post/new" class="btn btn-primary">
+              <span>发布新帖</span>
             </a>
-          ))}
+          ) : (
+            <a href="/login" class="btn btn-primary">
+              <span>{lang === 'zh' ? '进入会客厅' : 'Enter Lounge'}</span>
+            </a>
+          )}
+          <a href="#feed" class="btn btn-ghost">
+            <span>{lang === 'zh' ? '查看动态' : 'View Feed'}</span>
+          </a>
         </div>
-      )}
+      </div>
+
+      <aside class="club-status" aria-label="Club status">
+        <div class="status-row status-primary">
+          <span>{lang === 'zh' ? '席位' : 'Seats'}</span>
+          <strong>{memberCount}</strong>
+        </div>
+        <div class="status-grid">
+          <div>
+            <span>{lang === 'zh' ? '频道' : 'Channels'}</span>
+            <strong>4</strong>
+          </div>
+          <div>
+            <span>{lang === 'zh' ? '当前' : 'Now'}</span>
+            <strong>{activeCategory.label}</strong>
+          </div>
+        </div>
+        {members.length > 0 && (
+          <div class="status-members">
+            {members.map((m) => (
+              <a href={`/member/${m.nickname}`} class="status-member" title={m.nickname}>
+                <span>{m.avatar_emoji}</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </aside>
     </header>
 
-    <!-- Category Filter -->
-    <nav class="category-filter" aria-label="Filter by category">
-      {categories.map((cat) => (
-        <a
-          href={cat.key ? `/?cat=${cat.key}${lang !== 'zh' ? `&lang=${lang}` : ''}` : `/${lang !== 'zh' ? `?lang=${lang}` : ''}`}
-          class={`filter-btn ${category === cat.key ? 'active' : ''}`}
-        >
-          <span>{cat.emoji}</span>
-          <span>{cat.label}</span>
-        </a>
-      ))}
-    </nav>
-
-    <!-- Posts Feed -->
-    {posts.length > 0 ? (
-      <div class="posts-grid">
-        {posts.map((post, i) => (
-          <PostCard post={post} lang={lang} index={i} />
-        ))}
+    <section class="feed-toolbar" id="feed">
+      <div>
+        <p class="section-kicker">{lang === 'zh' ? '频道' : 'Channels'}</p>
+        <h2>{lang === 'zh' ? '今天聊什么' : 'What Is On'}</h2>
       </div>
-    ) : (
-      <div class="empty-state animate-fade-in">
-        <div class="icon">📭</div>
-        <p>{lang === 'zh' ? '还没有帖子，去发第一篇吧！' : 'No posts yet, create the first one!'}</p>
-        {user && (
-          <a href="/post/new" class="btn btn-primary" style="margin-top:var(--space-md)">
-            {lang === 'zh' ? '+ 发帖' : '+ New Post'}
+      <nav class="category-filter" aria-label="Filter by category">
+        {categories.map((cat) => (
+          <a
+            href={cat.key ? `/?cat=${cat.key}${lang !== 'zh' ? `&lang=${lang}` : ''}` : `/${lang !== 'zh' ? `?lang=${lang}` : ''}`}
+            class={`filter-btn filter-${cat.tone} ${category === cat.key ? 'active' : ''}`}
+          >
+            <span>{cat.emoji}</span>
+            <span>{cat.label}</span>
           </a>
-        )}
-      </div>
+        ))}
+      </nav>
+    </section>
+
+    {posts.length > 0 ? (
+      <section class="feed-section" aria-label="Posts">
+        <div class="feed-meta">
+          <span>{activeCategory.label}</span>
+          <span>{posts.length} {lang === 'zh' ? '篇动态' : 'posts'}</span>
+        </div>
+        <div class="posts-grid">
+          {posts.map((post, i) => (
+            <PostCard post={post} lang={lang} index={i} />
+          ))}
+        </div>
+      </section>
+    ) : (
+      <section class="empty-club animate-fade-in">
+        <div class="empty-mark" aria-hidden="true">F4</div>
+        <div class="empty-copy">
+          <p class="section-kicker">{lang === 'zh' ? 'LOUNGE IS QUIET' : 'LOUNGE IS QUIET'}</p>
+          <h2>{lang === 'zh' ? '今晚还没人开场' : 'No thread has started yet'}</h2>
+          <p>
+            {lang === 'zh'
+              ? '把刚通关的游戏、昨晚的电影、下一场球或一句英语笔记丢进来，气氛就起来了。'
+              : 'Drop the first game note, movie take, sports plan, or English sentence to set the tone.'}
+          </p>
+          <div class="prompt-row" aria-label="Prompt topics">
+            <span>🎮 Game</span>
+            <span>🎬 Movie</span>
+            <span>🏀 Sport</span>
+            <span>📚 English</span>
+          </div>
+          {user ? (
+            <a href="/post/new" class="btn btn-primary">
+              {lang === 'zh' ? '发布第一篇' : 'Create First Post'}
+            </a>
+          ) : (
+            <a href="/login" class="btn btn-primary">
+              {lang === 'zh' ? '登录后发布' : 'Login to Post'}
+            </a>
+          )}
+        </div>
+      </section>
     )}
   </div>
 </Layout>
 
 <style>
-  /* Hero */
-  .hero {
-    text-align: center;
-    padding: var(--space-2xl) 0 var(--space-xl);
+  .home-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
+  .home-hero {
+    position: relative;
+    min-height: 430px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    align-items: end;
+    gap: var(--space-xl);
+    padding: var(--space-2xl);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-lg);
+    background:
+      linear-gradient(90deg, rgba(4,6,10,0.95) 0%, rgba(4,6,10,0.62) 45%, rgba(4,6,10,0.28) 100%),
+      url('/assets/f4club-hero.webp') center / cover no-repeat;
+    box-shadow: 0 28px 70px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.16);
+  }
+
+  .hero-shade {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, transparent 0%, rgba(5,6,8,0.35) 62%, rgba(5,6,8,0.82) 100%),
+      linear-gradient(90deg, rgba(233,69,96,0.18), transparent 42%, rgba(56,189,248,0.12));
+    pointer-events: none;
+  }
+
+  .hero-copy,
+  .club-status {
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-copy {
+    max-width: 620px;
+  }
+
+  .hero-kicker,
+  .section-kicker {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-bottom: var(--space-sm);
+    letter-spacing: 0;
   }
 
   .hero-title {
-    font-size: var(--text-4xl);
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    margin-bottom: var(--space-sm);
-  }
-
-  .hero-f4 {
-    background: linear-gradient(135deg, #e94560, #6c5ce7, #0984e3);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-size: 3.6rem;
+    font-weight: 900;
+    letter-spacing: 0;
+    margin-bottom: var(--space-md);
+    color: #fff;
+    text-shadow: 0 18px 42px rgba(0,0,0,0.55);
   }
 
   .hero-desc {
-    color: var(--text-secondary);
-    font-size: var(--text-sm);
-    margin-bottom: var(--space-lg);
+    max-width: 520px;
+    color: rgba(245,247,251,0.82);
+    font-size: var(--text-lg);
+    line-height: var(--leading-normal);
+    margin-bottom: var(--space-xl);
   }
 
-  .hero-members {
+  .hero-actions {
     display: flex;
-    justify-content: center;
+    flex-wrap: wrap;
     gap: var(--space-sm);
   }
 
-  .hero-member {
+  .club-status {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+    background: rgba(5,7,11,0.62);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(22px) saturate(130%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+
+  .status-row,
+  .status-grid > div {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-full);
-    text-decoration: none;
-    transition: all var(--duration-normal) var(--ease-out);
+    justify-content: space-between;
+    min-height: 58px;
+    padding: var(--space-md);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.05);
   }
 
-  .hero-member:hover {
-    transform: translateY(-3px) scale(1.1);
-    border-color: var(--accent);
-    box-shadow: var(--shadow-glow);
+  .status-row span,
+  .status-grid span {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
   }
 
-  .hero-member-emoji {
-    font-size: 1.4rem;
+  .status-row strong,
+  .status-grid strong {
+    font-size: var(--text-xl);
+    color: var(--text-primary);
   }
 
-  /* Category Filter */
-  .category-filter {
+  /* Light mode overrides for club-status — use :global() to bypass Astro scoping */
+  :global([data-theme="light"]) .club-status {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  :global([data-theme="light"]) .status-row,
+  :global([data-theme="light"]) .status-grid > div {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  :global([data-theme="light"]) .status-row strong,
+  :global([data-theme="light"]) .status-grid strong {
+    color: #0f1020;
+  }
+
+  :global([data-theme="light"]) .status-member {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  :global([data-theme="light"]) .status-member:hover {
+    border-color: rgba(0, 0, 0, 0.22);
+  }
+
+  .status-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+
+  .status-members {
     display: flex;
     gap: var(--space-xs);
-    margin-bottom: var(--space-xl);
+  }
+
+  .status-member {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: transform var(--duration-fast) var(--ease-out), border-color var(--duration-fast);
+  }
+
+  .status-member:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,255,255,0.24);
+  }
+
+  .feed-toolbar {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: var(--space-lg);
+    align-items: end;
     padding-bottom: var(--space-md);
-    border-bottom: 1px solid var(--border-subtle);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .feed-toolbar h2 {
+    font-size: var(--text-2xl);
+  }
+
+  .category-filter {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-xs);
     overflow-x: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -165,37 +350,195 @@ const categories = [
   .filter-btn {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: var(--space-sm) var(--space-md);
-    border-radius: var(--radius-full);
+    gap: 6px;
+    min-height: 38px;
+    padding: 0 var(--space-md);
+    border-radius: var(--radius-md);
     font-size: var(--text-sm);
     color: var(--text-secondary);
-    text-decoration: none;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
     white-space: nowrap;
     transition: all var(--duration-fast);
-    border: 1px solid transparent;
   }
 
-  .filter-btn:hover {
-    color: var(--text-primary);
-    background: var(--bg-card);
-  }
-
+  .filter-btn:hover,
   .filter-btn.active {
     color: var(--text-primary);
-    background: var(--bg-elevated);
-    border-color: var(--border-default);
+    background: rgba(255,255,255,0.09);
+    border-color: rgba(255,255,255,0.16);
+    transform: translateY(-1px);
   }
 
-  /* Posts Grid */
-  .posts-grid {
-    display: grid;
+  .filter-gaming.active { box-shadow: inset 0 -2px 0 var(--cat-gaming); }
+  .filter-movies.active { box-shadow: inset 0 -2px 0 var(--cat-movies); }
+  .filter-sports.active { box-shadow: inset 0 -2px 0 var(--cat-sports); }
+  .filter-english.active { box-shadow: inset 0 -2px 0 var(--cat-english); }
+  .filter-all.active { box-shadow: inset 0 -2px 0 var(--accent); }
+
+  .feed-section {
+    display: flex;
+    flex-direction: column;
     gap: var(--space-md);
   }
 
-  @media (min-width: 640px) {
+  .feed-meta {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
+
+  .posts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-md);
+  }
+
+  .empty-club {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: var(--space-xl);
+    align-items: center;
+    padding: var(--space-xl);
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(18px);
+  }
+
+  .empty-mark {
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    background:
+      linear-gradient(180deg, rgba(5,6,8,0.35), rgba(5,6,8,0.92)),
+      url('/assets/f4club-hero.webp') 42% 64% / 180% auto no-repeat;
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.9);
+    font-size: 3rem;
+    font-weight: 900;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+
+  .empty-copy h2 {
+    margin-bottom: var(--space-sm);
+  }
+
+  .empty-copy p {
+    color: var(--text-secondary);
+    max-width: 620px;
+    margin-bottom: var(--space-md);
+  }
+
+  .prompt-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-lg);
+  }
+
+  .prompt-row span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+  }
+
+  @media (max-width: 860px) {
+    .home-hero {
+      grid-template-columns: 1fr;
+      min-height: 520px;
+      padding: var(--space-xl);
+      background-position: center;
+    }
+
+    .club-status {
+      align-self: auto;
+    }
+
+    .feed-toolbar,
+    .empty-club {
+      grid-template-columns: 1fr;
+    }
+
+    .category-filter {
+      justify-content: flex-start;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .home-hero {
+      min-height: auto;
+      padding: var(--space-lg);
+      background-position: 58% center;
+    }
+
+    .hero-copy {
+      max-width: 310px;
+    }
+
+    .hero-title {
+      font-size: 2.5rem;
+    }
+
+    .hero-desc {
+      font-size: var(--text-base);
+    }
+
+    .club-status {
+      width: 100%;
+      min-width: 0;
+      padding: var(--space-sm);
+    }
+
+    .status-row,
+    .status-grid > div {
+      min-width: 0;
+      min-height: 56px;
+      padding: var(--space-sm) var(--space-md);
+    }
+
+    .status-row strong,
+    .status-grid strong {
+      max-width: 56%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--text-lg);
+    }
+
+    .status-members {
+      flex-wrap: wrap;
+    }
+
     .posts-grid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
+    }
+
+    .empty-mark {
+      height: 140px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .home-hero,
+    .feed-toolbar,
+    .feed-section,
+    .empty-club {
+      width: 100%;
+      max-width: 358px;
+      align-self: flex-start;
     }
   }
 </style>

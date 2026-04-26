@@ -5,7 +5,8 @@ import { getAllUsers } from '../lib/db';
 
 const user = (Astro.locals as any).user;
 if (user) {
-  return Astro.redirect('/');
+  const redirect = Astro.url.searchParams.get('redirect');
+  return Astro.redirect(redirect ? decodeURIComponent(redirect) : '/');
 }
 
 const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
@@ -92,11 +93,7 @@ if (members.length === 0) {
     </div>
 
     <!-- Background decoration -->
-    <div class="login-bg">
-      <div class="bg-circle c1"></div>
-      <div class="bg-circle c2"></div>
-      <div class="bg-circle c3"></div>
-    </div>
+    <div class="login-bg"></div>
   </div>
 </Layout>
 
@@ -153,7 +150,10 @@ if (members.length === 0) {
       });
 
       if (res.ok) {
-        window.location.href = '/';
+        // Redirect to original destination if provided, otherwise go home
+        const params = new URLSearchParams(window.location.search);
+        const redirectTo = params.get('redirect');
+        window.location.href = redirectTo ? decodeURIComponent(redirectTo) : '/';
       } else {
         errorMsg.style.display = 'block';
         passwordInput.value = '';
@@ -171,9 +171,8 @@ if (members.length === 0) {
 
 <style>
   .login-page {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-items: center;
     min-height: calc(100vh - var(--nav-height) - 100px);
     padding: var(--space-lg);
     position: relative;
@@ -187,6 +186,11 @@ if (members.length === 0) {
     max-width: 400px;
     padding: var(--space-2xl);
     text-align: center;
+    background: linear-gradient(180deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 28px 70px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.16);
+    backdrop-filter: blur(24px) saturate(130%);
   }
 
   .login-logo {
@@ -200,7 +204,7 @@ if (members.length === 0) {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    letter-spacing: -0.05em;
+    letter-spacing: 0;
   }
 
   .logo-sub {
@@ -234,9 +238,9 @@ if (members.length === 0) {
     align-items: center;
     gap: var(--space-xs);
     padding: var(--space-lg);
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: var(--radius-md);
     cursor: pointer;
     transition: all var(--duration-normal) var(--ease-out);
   }
@@ -330,37 +334,10 @@ if (members.length === 0) {
     z-index: 0;
     pointer-events: none;
     overflow: hidden;
+    background:
+      linear-gradient(90deg, rgba(5,6,8,0.92), rgba(5,6,8,0.58), rgba(5,6,8,0.92)),
+      linear-gradient(180deg, rgba(5,6,8,0.42), rgba(5,6,8,0.96)),
+      url('/assets/f4club-hero.webp') center / cover no-repeat;
   }
 
-  .bg-circle {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(80px);
-    opacity: 0.15;
-  }
-
-  .c1 {
-    width: 400px;
-    height: 400px;
-    background: var(--cat-gaming);
-    top: -100px;
-    right: -100px;
-  }
-
-  .c2 {
-    width: 300px;
-    height: 300px;
-    background: var(--accent);
-    bottom: -80px;
-    left: -80px;
-  }
-
-  .c3 {
-    width: 200px;
-    height: 200px;
-    background: var(--cat-sports);
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-  }
 </style>

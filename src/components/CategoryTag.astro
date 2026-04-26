@@ -27,14 +27,32 @@ const sportLabel = sportType ? sportLabels[sportType] : null;
 
 <a href={`/category/${category}`} class={`tag ${config.cssClass}`}>
   <span>{config.emoji}</span>
-  <span>{config[lang]}</span>
-  {sportLabel && <span>· {sportLabel[lang]}</span>}
+  <span class="tag-label">{config[lang]}</span>
+  {sportLabel && <span class="tag-sport">· {sportLabel[lang]}</span>}
 </a>
 
 <style>
   .tag {
     text-decoration: none;
     transition: all var(--duration-fast);
+    max-width: 140px;
+    display: inline-flex;
+    overflow: hidden;
+  }
+
+  .tag-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .tag-sport {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex-shrink: 1;
   }
 
   .tag:hover {

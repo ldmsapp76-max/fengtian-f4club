@@ -3,10 +3,12 @@ import cloudflare from '@astrojs/cloudflare';
 
 export default defineConfig({
   output: 'server',
+  devToolbar: { enabled: false },
   adapter: cloudflare({
+    sessionKVBindingName: 'SESSIONS',
     platformProxy: {
       enabled: true,
-      persist: '.wrangler/state/v3',
+      persist: '.wrangler/state',
     },
   }),
   vite: {

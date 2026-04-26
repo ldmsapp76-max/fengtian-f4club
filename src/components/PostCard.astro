@@ -1,5 +1,5 @@
 ---
-// 奉天F4Club — Post Card Component
+// 奉天F4Club - Post Card Component
 import MemberBadge from './MemberBadge.astro';
 import CategoryTag from './CategoryTag.astro';
 import type { Post } from '../lib/db';
@@ -13,29 +13,42 @@ interface Props {
 
 const { post, lang = 'zh', index = 0 } = Astro.props;
 
-// Extract first image URL from markdown content
 const firstImageMatch = post.content.match(/!\[.*?\]\((.*?)\)/);
 const thumbnailUrl = firstImageMatch ? firstImageMatch[1] : null;
 
-// Truncate content for preview
 const preview = post.content
-  .replace(/!\[.*?\]\(.*?\)/g, '') // strip image markdown
-  .replace(/[#*`\[\]!()]/g, '') // strip other markdown
+  .replace(/!\[.*?\]\(.*?\)/g, '')
+  .replace(/[#*`\[\]!()]/g, '')
   .replace(/\n+/g, ' ')
-  .slice(0, 150)
+  .slice(0, 100)
   .trim();
+
+const categoryEmoji: Record<string, string> = {
+  gaming: '🎮',
+  movies: '🎬',
+  sports: '🏀',
+  english: '📚',
+};
+
+const cardClass = `post-card post-card-${post.category}`;
 ---
 
-<article class={`post-card animate-fade-in delay-${Math.min(index + 1, 5)}`}>
+<article class={`${cardClass} animate-fade-in delay-${Math.min(index + 1, 5)}`}>
   <a href={`/post/${post.id}`} class="post-card-link">
-    {thumbnailUrl && (
-      <div class="post-thumbnail">
-        <img src={thumbnailUrl} alt="" loading="lazy" />
-      </div>
-    )}
+    <span class="post-card-accent" aria-hidden="true"></span>
 
-    <div class="post-card-body">
-      <div class="post-card-header">
+    <!-- 图片区 + 作者信息叠加 -->
+    <div class={`post-media ${thumbnailUrl ? 'has-image' : 'is-generated'}`}>
+      {thumbnailUrl ? (
+        <img src={thumbnailUrl} alt="" loading="lazy" />
+      ) : (
+        <>
+          <span class="media-symbol">{categoryEmoji[post.category] || '✦'}</span>
+          <span class="media-grid" aria-hidden="true"></span>
+        </>
+      )}
+      <!-- 作者 + 时间 overlay（图片底部玻璃条） -->
+      <div class="media-meta">
         <MemberBadge
           nickname={post.author_nickname || ''}
           emoji={post.author_emoji || '👤'}
@@ -44,20 +57,21 @@ const preview = post.content
         />
         <span class="post-time">{timeAgo(post.created_at, lang)}</span>
       </div>
+    </div>
 
+    <!-- 正文区 -->
+    <div class="post-card-body">
       <h3 class="post-title">{post.title}</h3>
-
-      {preview && <p class="post-preview">{preview}{post.content.length > 150 ? '...' : ''}</p>}
+      {preview && <p class="post-preview">{preview}{post.content.length > 100 ? '…' : ''}</p>}
 
       <div class="post-card-footer">
         <CategoryTag category={post.category} sportType={post.sport_type} lang={lang} />
-
         <div class="post-stats">
           <span class="stat" title={lang === 'zh' ? '赞' : 'Likes'}>
-            ♥ {post.like_count || 0}
+            <span>♥</span>{post.like_count || 0}
           </span>
           <span class="stat" title={lang === 'zh' ? '评论' : 'Comments'}>
-            💬 {post.comment_count || 0}
+            <span>↗</span>{post.comment_count || 0}
           </span>
         </div>
       </div>
@@ -67,68 +81,202 @@ const preview = post.content
 
 <style>
   .post-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-lg);
-    transition: all var(--duration-normal) var(--ease-out);
+    --card-accent: var(--accent);
+    position: relative;
     overflow: hidden;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.035));
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition:
+      transform var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal),
+      box-shadow var(--duration-normal),
+      background var(--duration-normal);
+    backdrop-filter: blur(18px) saturate(130%);
   }
+
+  .post-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 18%, transparent), transparent 46%);
+    opacity: 0.62;
+    pointer-events: none;
+  }
+
+  .post-card-gaming  { --card-accent: var(--cat-gaming); }
+  .post-card-movies  { --card-accent: var(--cat-movies); }
+  .post-card-sports  { --card-accent: var(--cat-sports); }
+  .post-card-english { --card-accent: var(--cat-english); }
 
   .post-card:hover {
-    background: var(--bg-card-hover);
-    border-color: var(--border-default);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    background: linear-gradient(180deg, rgba(255,255,255,0.11), rgba(255,255,255,0.05));
+    border-color: color-mix(in srgb, var(--card-accent) 44%, rgba(255,255,255,0.12));
+    transform: translateY(-4px);
+    box-shadow: 0 18px 46px rgba(0,0,0,0.34), 0 0 0 1px color-mix(in srgb, var(--card-accent) 18%, transparent);
   }
 
+  /* 卡片整体用 flex 列，高度由内容决定，不再强制拉伸 */
   .post-card-link {
-    display: block;
-    padding: var(--space-lg);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
     text-decoration: none;
     color: inherit;
   }
 
-  .post-card-header {
+  .post-card-accent {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 3px;
+    background: linear-gradient(180deg, var(--card-accent), transparent);
+    opacity: 0.9;
+    z-index: 2;
+  }
+
+  /* ---- 图片区 ---- */
+  .post-media {
+    position: relative;
+    height: 168px;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    flex-shrink: 0;
+  }
+
+  .post-media.has-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--duration-slow) var(--ease-out);
+  }
+
+  .post-card:hover .post-media.has-image img {
+    transform: scale(1.05);
+  }
+
+  .post-media.is-generated {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--card-accent) 22%, transparent), rgba(255,255,255,0.03)),
+      linear-gradient(180deg, rgba(255,255,255,0.06), transparent);
+  }
+
+  .media-symbol {
+    position: relative;
+    z-index: 1;
+    font-size: 2.5rem;
+    filter: drop-shadow(0 12px 24px rgba(0,0,0,0.42));
+  }
+
+  .media-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: linear-gradient(180deg, rgba(0,0,0,0.64), transparent);
+  }
+
+  /* 作者 + 时间 overlay */
+  .media-meta {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--space-sm);
+    padding: 6px var(--space-md);
+    background: linear-gradient(0deg, rgba(5,7,11,0.82) 0%, rgba(5,7,11,0.18) 100%);
+    backdrop-filter: blur(6px);
   }
 
   .post-time {
+    flex-shrink: 0;
     font-size: var(--text-xs);
-    color: var(--text-muted);
+    color: rgba(255,255,255,0.6);
     font-family: var(--font-mono);
   }
 
+  /* ---- 正文区 ---- */
+  .post-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+
   .post-title {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    margin-bottom: var(--space-sm);
+    font-size: var(--text-base);
+    font-weight: 700;
     line-height: var(--leading-tight);
     color: var(--text-primary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .post-preview {
-    font-size: var(--text-sm);
     color: var(--text-secondary);
+    font-size: var(--text-sm);
     line-height: var(--leading-normal);
-    margin-bottom: var(--space-md);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
   .post-card-footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: var(--space-sm);
+    padding-top: var(--space-xs);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin-top: var(--space-xs);
+  }
+
+  /* 限制标签最大宽度，防止过长 */
+  .post-card-footer :global(.tag) {
+    max-width: 130px;
+    overflow: hidden;
+    white-space: nowrap;
+    flex-shrink: 1;
+    min-width: 0;
   }
 
   .post-stats {
     display: flex;
-    gap: var(--space-md);
+    gap: var(--space-xs);
+    flex-shrink: 0;
   }
 
   .stat {
-    font-size: var(--text-xs);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 26px;
+    padding: 0 8px;
+    border-radius: var(--radius-md);
     color: var(--text-muted);
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+    font-size: var(--text-xs);
+    font-family: var(--font-mono);
+  }
+
+  @media (max-width: 640px) {
+    .post-media {
+      height: 140px;
+    }
+    .post-card-body {
+      padding: var(--space-sm) var(--space-md);
+    }
   }
 </style>
