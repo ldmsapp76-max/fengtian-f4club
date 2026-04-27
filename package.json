@@ -13,13 +13,13 @@
     "db:verify:remote": "wrangler d1 execute f4club-db --remote --command=\"SELECT id, nickname, role, avatar_emoji, password_hash != '' AS has_password FROM users ORDER BY id\" -y"
   },
   "dependencies": {
-    "astro": "^5.0.0",
     "@astrojs/cloudflare": "^12.0.0",
+    "astro": "^5.0.0",
     "marked": "^15.0.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
-    "wrangler": "^3.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "wrangler": "^4.85.0"
   }
 }
