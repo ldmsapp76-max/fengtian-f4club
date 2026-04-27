@@ -11,7 +11,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const runtime = (locals as any).runtime;
-  const { IMAGES } = runtime.env;
+  const IMAGES = runtime?.env?.IMAGES;
+  if (!IMAGES) {
+    return new Response(
+      JSON.stringify({
+        error: 'Image storage is not configured. Please bind an R2 bucket named IMAGES in Cloudflare.',
+      }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  }
 
   try {
     const formData = await request.formData();

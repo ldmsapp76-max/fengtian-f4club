@@ -3,7 +3,10 @@ import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const runtime = (locals as any).runtime;
-  const { IMAGES } = runtime.env;
+  const IMAGES = runtime?.env?.IMAGES;
+  if (!IMAGES) {
+    return new Response('Image storage is not configured', { status: 500 });
+  }
 
   const key = params.key;
   if (!key) {
