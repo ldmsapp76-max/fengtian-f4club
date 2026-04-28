@@ -224,16 +224,70 @@ if (post.author_id !== user.id) {
 
   uploadBtn?.addEventListener('click', () => fileInput.click());
 
+  function formatFileSize(bytes) {
+    if (bytes < 1024 * 1024) {
+      return `${Math.round(bytes / 1024)}KB`;
+    }
+    return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+  }
+
+  async function compressImageFile(file) {
+    const compressibleTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!compressibleTypes.includes(file.type)) {
+      return { file, originalSize: file.size, compressed: false };
+    }
+
+    const imageUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.decoding = 'async';
+
+    try {
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = imageUrl;
+      });
+
+      const maxSide = 1920;
+      const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+      const width = Math.max(1, Math.round(image.naturalWidth * scale));
+      const height = Math.max(1, Math.round(image.naturalHeight * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(image, 0, 0, width, height);
+
+      const blob = await new Promise((resolve) => {
+        canvas.toBlob(resolve, 'image/webp', 0.82);
+      });
+
+      if (!blob || blob.size >= file.size) {
+        return { file, originalSize: file.size, compressed: false };
+      }
+
+      const baseName = file.name.replace(/\.[^.]+$/, '') || 'image';
+      const compressedFile = new File([blob], `${baseName}.webp`, { type: 'image/webp' });
+      return { file: compressedFile, originalSize: file.size, compressed: true };
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+    }
+  }
+
   fileInput?.addEventListener('change', async () => {
     const file = fileInput.files[0];
     if (!file) return;
 
-    uploadStatus.textContent = '上传中...';
+    uploadStatus.textContent = '压缩中...';
     uploadBtn.disabled = true;
 
     try {
+      const uploadFile = await compressImageFile(file);
+      uploadStatus.textContent = '上传中...';
+
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', uploadFile.file);
 
       const res = await fetch('/api/upload', {
         method: 'POST',
@@ -246,7 +300,10 @@ if (post.author_id !== user.id) {
         attachedImages.push({ markdown: imgMd, alt: file.name, url: data.url });
 
         renderAttachedImages();
-        uploadStatus.textContent = '✓ ' + file.name;
+        const savedText = uploadFile.compressed
+          ? `，${formatFileSize(uploadFile.originalSize)} → ${formatFileSize(uploadFile.file.size)}`
+          : '';
+        uploadStatus.textContent = '✓ ' + file.name + savedText;
       } else {
         const data = await res.json();
         uploadStatus.textContent = '✗ ' + (data.error || 'Upload failed');
