@@ -88,15 +88,30 @@ export async function getPosts(
       u.nickname as author_nickname,
       u.avatar_emoji as author_emoji,
       u.role as author_role,
-      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
-      ${userId ? `,(SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ${userId}) as liked_by_user` : ',0 as liked_by_user'}
+      COALESCE(comment_counts.comment_count, 0) as comment_count,
+      COALESCE(like_counts.like_count, 0) as like_count,
+      ${userId ? 'CASE WHEN user_likes.user_id IS NULL THEN 0 ELSE 1 END as liked_by_user' : '0 as liked_by_user'}
     FROM posts p
     JOIN users u ON p.author_id = u.id
+    LEFT JOIN (
+      SELECT post_id, COUNT(*) as comment_count
+      FROM comments
+      GROUP BY post_id
+    ) comment_counts ON comment_counts.post_id = p.id
+    LEFT JOIN (
+      SELECT post_id, COUNT(*) as like_count
+      FROM likes
+      GROUP BY post_id
+    ) like_counts ON like_counts.post_id = p.id
+    ${userId ? 'LEFT JOIN likes user_likes ON user_likes.post_id = p.id AND user_likes.user_id = ?' : ''}
   `;
 
   const conditions: string[] = [];
   const bindings: any[] = [];
+
+  if (userId) {
+    bindings.push(userId);
+  }
 
   if (category) {
     conditions.push('p.category = ?');

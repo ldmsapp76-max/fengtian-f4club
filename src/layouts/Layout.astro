@@ -1,6 +1,7 @@
 ---
 // 奉天F4Club — Main Layout v2
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title?: string;
@@ -32,6 +33,7 @@ const currentPath = Astro.url.pathname;
   <meta name="description" content={description} />
   <link rel="preload" as="image" href="/assets/f4club-hero.webp" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <ClientRouter />
   <title>{fullTitle}</title>
 </head>
 <body>
@@ -114,42 +116,95 @@ const currentPath = Astro.url.pathname;
 
 <script is:inline>
 (function(){
-  // Theme
-  const themeBtn = document.getElementById('theme-toggle');
-  const themeIcon = document.getElementById('theme-icon');
+  const applyThemeIcon = () => {
+    const themeIcon = document.getElementById('theme-icon');
+    if (themeIcon) {
+      themeIcon.textContent = document.documentElement.getAttribute('data-theme') === 'light' ? '☀️' : '🌙';
+    }
+  };
+
   if (localStorage.getItem('theme') === 'light') {
     document.documentElement.setAttribute('data-theme','light');
-    themeIcon.textContent = '☀️';
   }
-  themeBtn?.addEventListener('click', () => {
-    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    if (isLight) {
-      document.documentElement.removeAttribute('data-theme');
-      localStorage.setItem('theme','dark');
-      themeIcon.textContent = '🌙';
-    } else {
-      document.documentElement.setAttribute('data-theme','light');
-      localStorage.setItem('theme','light');
-      themeIcon.textContent = '☀️';
-    }
-  });
+  applyThemeIcon();
+  document.addEventListener('astro:page-load', applyThemeIcon);
 
-  // Language
-  const langBtn = document.getElementById('lang-toggle');
-  langBtn?.addEventListener('click', () => {
-    const url = new URL(window.location.href);
-    const cur = url.searchParams.get('lang') || 'zh';
-    url.searchParams.set('lang', cur === 'zh' ? 'en' : 'zh');
-    window.location.href = url.toString();
-  });
+  if (!window.__f4clubChromeReady) {
+    window.__f4clubChromeReady = true;
 
-  // Mobile hamburger
-  const ham = document.getElementById('nav-hamburger');
-  const navLinks = document.getElementById('nav-links');
-  ham?.addEventListener('click', () => {
-    const open = navLinks.classList.toggle('open');
-    ham.classList.toggle('open', open);
-  });
+    document.addEventListener('click', (event) => {
+      const themeBtn = event.target.closest('#theme-toggle');
+      if (themeBtn) {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        if (isLight) {
+          document.documentElement.removeAttribute('data-theme');
+          localStorage.setItem('theme','dark');
+        } else {
+          document.documentElement.setAttribute('data-theme','light');
+          localStorage.setItem('theme','light');
+        }
+        applyThemeIcon();
+        return;
+      }
+
+      const langBtn = event.target.closest('#lang-toggle');
+      if (langBtn) {
+        const url = new URL(window.location.href);
+        const cur = url.searchParams.get('lang') || 'zh';
+        url.searchParams.set('lang', cur === 'zh' ? 'en' : 'zh');
+        window.location.href = url.toString();
+        return;
+      }
+
+      const ham = event.target.closest('#nav-hamburger');
+      if (ham) {
+        const navLinks = document.getElementById('nav-links');
+        const open = navLinks?.classList.toggle('open');
+        ham.classList.toggle('open', !!open);
+      }
+    });
+  }
+
+  // Warm up same-site pages shortly before the user opens them.
+  const prefetched = window.__f4clubPrefetched || new Set();
+  window.__f4clubPrefetched = prefetched;
+  const canPrefetch = (anchor) => {
+    if (!anchor?.href || anchor.target || anchor.hasAttribute('download')) return false;
+    const url = new URL(anchor.href, window.location.href);
+    if (url.origin !== window.location.origin) return false;
+    if (url.pathname.startsWith('/api/')) return false;
+    if (url.pathname === window.location.pathname && url.search === window.location.search) return false;
+    return true;
+  };
+  const prefetchPage = (anchor) => {
+    if (!canPrefetch(anchor)) return;
+    const url = new URL(anchor.href, window.location.href);
+    url.hash = '';
+    const key = url.toString();
+    if (prefetched.has(key)) return;
+    prefetched.add(key);
+    fetch(key, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { 'X-F4-Prefetch': '1' },
+      priority: 'low',
+    }).catch(() => prefetched.delete(key));
+  };
+  if (!window.__f4clubPrefetchReady) {
+    window.__f4clubPrefetchReady = true;
+    document.addEventListener('pointerover', (event) => {
+      const anchor = event.target.closest('a[href]');
+      prefetchPage(anchor);
+    }, { passive: true });
+    document.addEventListener('focusin', (event) => {
+      const anchor = event.target.closest('a[href]');
+      prefetchPage(anchor);
+    });
+    document.addEventListener('touchstart', (event) => {
+      const anchor = event.target.closest('a[href]');
+      prefetchPage(anchor);
+    }, { passive: true });
+  }
 })();
 </script>
 

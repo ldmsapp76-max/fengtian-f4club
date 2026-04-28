@@ -1,6 +1,6 @@
 // 奉天F4Club — Middleware (Session Resolution)
 import { defineMiddleware } from 'astro:middleware';
-import { getSessionToken, getSession } from './lib/auth';
+import { getSessionToken, getSession, refreshSessionUser } from './lib/auth';
 import { getUserById } from './lib/db';
 
 export const onRequest = defineMiddleware(async (context, next) => {
@@ -20,14 +20,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
     try {
       const session = await getSession(SESSIONS, token);
       if (session) {
-        const user = await getUserById(DB, session.userId);
-        if (user) {
-          (locals as any).user = {
-            id: user.id,
-            nickname: user.nickname,
-            role: user.role,
-            avatar_emoji: user.avatar_emoji,
-          };
+        if (session.user) {
+          (locals as any).user = session.user;
+        } else {
+          const user = await getUserById(DB, session.userId);
+          if (user) {
+            const sessionUser = {
+              id: user.id,
+              nickname: user.nickname,
+              role: user.role,
+              avatar_emoji: user.avatar_emoji,
+            };
+            (locals as any).user = sessionUser;
+            context.waitUntil?.(refreshSessionUser(SESSIONS, token, sessionUser));
+          }
         }
       }
     } catch (e) {

@@ -39,7 +39,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Create session
-    const token = await createSession(SESSIONS, user.id);
+    const token = await createSession(SESSIONS, {
+      id: user.id,
+      nickname: user.nickname,
+      role: user.role,
+      avatar_emoji: user.avatar_emoji,
+    });
 
     return new Response(JSON.stringify({ success: true, user: { id: user.id, nickname: user.nickname } }), {
       status: 200,

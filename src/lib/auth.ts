@@ -3,6 +3,18 @@
 const SALT = 'f4club-2026-fengtian';
 const SESSION_TTL = 60 * 60 * 24 * 30; // 30 days in seconds
 
+export interface SessionUser {
+  id: number;
+  nickname: string;
+  role: string;
+  avatar_emoji: string;
+}
+
+export interface SessionData {
+  userId: number;
+  user?: SessionUser;
+}
+
 export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(SALT + password);
@@ -24,19 +36,29 @@ export function generateSessionToken(): string {
 
 export async function createSession(
   kv: KVNamespace,
-  userId: number
+  user: SessionUser
 ): Promise<string> {
   const token = generateSessionToken();
-  await kv.put(`session:${token}`, JSON.stringify({ userId }), {
+  await kv.put(`session:${token}`, JSON.stringify({ userId: user.id, user }), {
     expirationTtl: SESSION_TTL,
   });
   return token;
 }
 
+export async function refreshSessionUser(
+  kv: KVNamespace,
+  token: string,
+  user: SessionUser
+): Promise<void> {
+  await kv.put(`session:${token}`, JSON.stringify({ userId: user.id, user }), {
+    expirationTtl: SESSION_TTL,
+  });
+}
+
 export async function getSession(
   kv: KVNamespace,
   token: string
-): Promise<{ userId: number } | null> {
+): Promise<SessionData | null> {
   const data = await kv.get(`session:${token}`);
   if (!data) return null;
   return JSON.parse(data);
