@@ -1,0 +1,80 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
+---
+
+<Layout title={lang === 'zh' ? '突破极限' : 'Break The Limit'} lang={lang}>
+  <div class="container page-content game-shell">
+    <header class="game-header">
+      <div>
+        <p class="section-kicker">COCOS H5</p>
+        <h1>{lang === 'zh' ? '突破极限' : 'Break The Limit'}</h1>
+      </div>
+      <a href="/games" class="btn btn-ghost">{lang === 'zh' ? '返回游戏列表' : 'Back to Games'}</a>
+    </header>
+
+    <section class="game-frame-wrap">
+      <iframe
+        src="/games/web-demo/index.html"
+        title={lang === 'zh' ? '突破极限' : 'Break The Limit'}
+        class="game-frame"
+        allow="autoplay; fullscreen"
+      ></iframe>
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .game-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .game-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-md);
+  }
+
+  .section-kicker {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  .game-header h1 {
+    margin-top: var(--space-xs);
+    font-size: var(--text-2xl);
+  }
+
+  .game-frame-wrap {
+    overflow: hidden;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: #000;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .game-frame {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    min-height: 360px;
+    border: 0;
+    background: #000;
+  }
+
+  @media (max-width: 720px) {
+    .game-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .game-frame {
+      min-height: 240px;
+    }
+  }
+</style>

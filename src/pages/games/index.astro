@@ -1,0 +1,158 @@
+---
+import Layout from '../../layouts/Layout.astro';
+
+const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
+
+const games = [
+  {
+    slug: 'web-demo',
+    title: lang === 'zh' ? '突破极限' : 'Break The Limit',
+    description: lang === 'zh'
+      ? '横屏 Cocos H5 小游戏，进入后可播放主题音乐。'
+      : 'A landscape Cocos H5 game demo with themed music.',
+    cover: '/games/web-demo/assets/main/native/29/29304d95-95fb-4c94-8654-91bd354fb78e.0e874.jpg',
+    engine: 'Cocos Creator',
+  },
+];
+---
+
+<Layout title={lang === 'zh' ? '在线游戏' : 'Online Games'} lang={lang}>
+  <div class="container page-content games-shell">
+    <header class="games-header">
+      <div>
+        <p class="section-kicker">F4 ARCADE</p>
+        <h1>{lang === 'zh' ? '在线游戏' : 'Online Games'}</h1>
+      </div>
+      <a href="/" class="btn btn-ghost">{lang === 'zh' ? '返回帖子' : 'Back to Posts'}</a>
+    </header>
+
+    <section class="games-grid" aria-label="Online games">
+      {games.map((game) => (
+        <a href={`/games/${game.slug}`} class="game-card">
+          <div class="game-cover">
+            <img src={game.cover} alt="" loading="lazy" />
+          </div>
+          <div class="game-body">
+            <div>
+              <p class="game-engine">{game.engine}</p>
+              <h2>{game.title}</h2>
+              <p>{game.description}</p>
+            </div>
+            <span class="play-chip">{lang === 'zh' ? '开始' : 'Play'}</span>
+          </div>
+        </a>
+      ))}
+    </section>
+  </div>
+</Layout>
+
+<style>
+  .games-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+  }
+
+  .games-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section-kicker,
+  .game-engine {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    letter-spacing: 0;
+  }
+
+  .games-header h1 {
+    margin-top: var(--space-xs);
+    font-size: var(--text-3xl);
+  }
+
+  .games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-md);
+  }
+
+  .game-card {
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.035));
+    box-shadow: var(--shadow-card);
+    transition:
+      transform var(--duration-normal) var(--ease-out),
+      border-color var(--duration-normal),
+      box-shadow var(--duration-normal);
+  }
+
+  .game-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--cat-gaming) 45%, var(--border-default));
+    box-shadow: 0 18px 46px rgba(0,0,0,0.34), 0 0 0 1px color-mix(in srgb, var(--cat-gaming) 18%, transparent);
+  }
+
+  .game-cover {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    background: rgba(255,255,255,0.04);
+  }
+
+  .game-cover img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    transition: transform var(--duration-slow) var(--ease-out);
+  }
+
+  .game-card:hover .game-cover img {
+    transform: scale(1.04);
+  }
+
+  .game-body {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-md);
+  }
+
+  .game-body h2 {
+    margin: 4px 0;
+    font-size: var(--text-xl);
+  }
+
+  .game-body p:not(.game-engine) {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+  }
+
+  .play-chip {
+    flex-shrink: 0;
+    min-height: 30px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 var(--space-sm);
+    border-radius: var(--radius-md);
+    color: var(--cat-gaming);
+    background: var(--cat-gaming-glow);
+    border: 1px solid color-mix(in srgb, var(--cat-gaming) 35%, transparent);
+    font-size: var(--text-xs);
+    font-weight: 700;
+  }
+
+  @media (max-width: 640px) {
+    .games-header {
+      align-items: stretch;
+      flex-direction: column;
+    }
+  }
+</style>

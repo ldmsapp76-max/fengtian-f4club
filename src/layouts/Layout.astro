@@ -13,6 +13,8 @@ const { title = '奉天F4Club', description = '前同事们的秘密基地', lan
 const fullTitle = title === '奉天F4Club' ? title : `${title} — 奉天F4Club`;
 
 const navLinks = [
+  { href: '/',                 emoji: '💬', zh: '帖子', en: 'Posts',    colorVar: 'var(--accent)' },
+  { href: '/games',            emoji: '🎲', zh: '在线游戏', en: 'Games', colorVar: 'var(--cat-gaming)' },
   { href: '/category/gaming',  emoji: '🎮', zh: '游戏', en: 'Gaming',   colorVar: 'var(--cat-gaming)' },
   { href: '/category/movies',  emoji: '🎬', zh: '电影', en: 'Movies',   colorVar: 'var(--cat-movies)' },
   { href: '/category/sports',  emoji: '🏀', zh: '运动', en: 'Sports',   colorVar: 'var(--cat-sports)' },
@@ -49,7 +51,7 @@ const currentPath = Astro.url.pathname;
       {navLinks.map(link => (
         <a
           href={link.href}
-          class={`nav-link ${currentPath === link.href ? 'active' : ''}`}
+          class={`nav-link ${currentPath === link.href || (link.href !== '/' && currentPath.startsWith(link.href + '/')) ? 'active' : ''}`}
           style={`--link-color: ${link.colorVar}`}
         >
           <span class="nav-link-emoji">{link.emoji}</span>
