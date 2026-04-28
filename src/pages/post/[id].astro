@@ -102,10 +102,13 @@ const isAuthor = user && user.id === post.author_id;
   </article>
 </Layout>
 
-<script is:inline>
+<script is:inline data-astro-rerun>
+(function initPostDetailPage() {
   // Like toggle
   const likeBtn = document.getElementById('like-btn');
   const likeCount = document.getElementById('like-count');
+  if (likeBtn?.dataset.ready === 'true') return;
+  if (likeBtn) likeBtn.dataset.ready = 'true';
 
   likeBtn?.addEventListener('click', async () => {
     const postId = likeBtn.dataset.postId;
@@ -132,6 +135,7 @@ const isAuthor = user && user.id === post.author_id;
 
   // Delete post
   const deleteBtn = document.getElementById('delete-btn');
+  if (deleteBtn) deleteBtn.dataset.ready = 'true';
   deleteBtn?.addEventListener('click', async () => {
     const msg = document.documentElement.lang === 'zh-CN'
       ? '确定要删除这篇帖子吗？'
@@ -148,6 +152,7 @@ const isAuthor = user && user.id === post.author_id;
       console.error('Delete error:', err);
     }
   });
+})();
 </script>
 
 <style>
