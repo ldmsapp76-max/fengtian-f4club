@@ -32,8 +32,8 @@ if (!post) {
   return Astro.redirect('/');
 }
 
-// Render markdown content
-const htmlContent = marked(post.content);
+// Render markdown content. Keep user-entered line breaks in short-form posts.
+const htmlContent = marked.parse(post.content, { breaks: true });
 const isAuthor = user && user.id === post.author_id;
 ---
 
