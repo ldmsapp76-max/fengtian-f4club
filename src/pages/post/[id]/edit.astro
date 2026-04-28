@@ -74,7 +74,7 @@ if (post.author_id !== user.id) {
             </button>
             <span class="upload-status" id="upload-status"></span>
           </div>
-          <div class="upload-preview" id="upload-preview"></div>
+          <div class="attached-images" id="attached-images"></div>
         </div>
 
         <div class="form-group">
@@ -88,7 +88,7 @@ if (post.author_id !== user.id) {
             <button type="button" class="toolbar-btn" data-action="link" title="Link">🔗</button>
             <button type="button" class="toolbar-btn" data-action="heading" title="Heading">H</button>
           </div>
-          <textarea id="post-content" class="input content-editor" rows="12" required>{post.content}</textarea>
+          <textarea id="post-content" class="input content-editor" rows="12">{post.content}</textarea>
         </div>
 
         <div class="form-actions">
@@ -109,8 +109,62 @@ if (post.author_id !== user.id) {
   const uploadBtn = document.getElementById('upload-btn');
   const fileInput = document.getElementById('file-input');
   const uploadStatus = document.getElementById('upload-status');
-  const uploadPreview = document.getElementById('upload-preview');
+  const attachedImagesEl = document.getElementById('attached-images');
   const contentEditor = document.getElementById('post-content');
+  const attachedImages = [];
+
+  function extractImagesFromContent(content) {
+    return content
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (markdown, alt, url) => {
+        attachedImages.push({ markdown, alt, url });
+        return '';
+      })
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  function renderAttachedImages() {
+    if (!attachedImagesEl) return;
+    attachedImagesEl.innerHTML = '';
+
+    attachedImages.forEach((image, index) => {
+      const item = document.createElement('div');
+      item.className = 'attached-image';
+
+      const img = document.createElement('img');
+      img.src = image.url;
+      img.alt = '';
+      img.loading = 'lazy';
+
+      const meta = document.createElement('div');
+      meta.className = 'attached-image-meta';
+
+      const name = document.createElement('span');
+      name.textContent = image.alt || 'Image';
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.dataset.removeImage = String(index);
+      remove.textContent = 'Remove';
+
+      meta.append(name, remove);
+      item.append(img, meta);
+      attachedImagesEl.appendChild(item);
+    });
+  }
+
+  if (contentEditor) {
+    contentEditor.value = extractImagesFromContent(contentEditor.value);
+    renderAttachedImages();
+  }
+
+  attachedImagesEl?.addEventListener('click', (event) => {
+    const removeBtn = event.target.closest('[data-remove-image]');
+    if (!removeBtn) return;
+
+    attachedImages.splice(Number(removeBtn.dataset.removeImage), 1);
+    renderAttachedImages();
+  });
 
   categorySelect?.addEventListener('change', () => {
     sportGroup.style.display = categorySelect.value === 'sports' ? 'block' : 'none';
@@ -137,18 +191,9 @@ if (post.author_id !== user.id) {
       if (res.ok) {
         const data = await res.json();
         const imgMd = `![${file.name}](${data.url})`;
-        const pos = contentEditor.selectionStart;
-        contentEditor.value =
-          contentEditor.value.substring(0, pos) +
-          '\n' + imgMd + '\n' +
-          contentEditor.value.substring(pos);
+        attachedImages.push({ markdown: imgMd, alt: file.name, url: data.url });
 
-        const img = document.createElement('img');
-        img.src = data.url;
-        img.style.maxWidth = '200px';
-        img.style.borderRadius = '8px';
-        img.style.marginTop = '8px';
-        uploadPreview.appendChild(img);
+        renderAttachedImages();
         uploadStatus.textContent = '✓ ' + file.name;
       } else {
         const data = await res.json();
@@ -203,7 +248,9 @@ if (post.author_id !== user.id) {
 
     const postId = form.dataset.postId;
     const title = document.getElementById('post-title').value.trim();
-    const content = contentEditor.value.trim();
+    const textContent = contentEditor.value.trim();
+    const imageContent = attachedImages.map((image) => image.markdown).join('\n');
+    const content = [textContent, imageContent].filter(Boolean).join('\n\n');
     const category = categorySelect.value;
     const sportType = category === 'sports' ? (document.getElementById('sport-type')?.value || '') : '';
 
@@ -278,6 +325,52 @@ if (post.author_id !== user.id) {
   .upload-status {
     font-size: var(--text-xs);
     color: var(--text-muted);
+  }
+
+  .attached-images {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: var(--space-sm);
+    margin-top: var(--space-sm);
+  }
+
+  .attached-image {
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .attached-image img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    background: rgba(5,7,11,0.35);
+  }
+
+  .attached-image-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    padding: 6px 8px;
+  }
+
+  .attached-image-meta span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+
+  .attached-image-meta button {
+    flex-shrink: 0;
+    color: var(--accent);
+    font-size: var(--text-xs);
+    cursor: pointer;
   }
 
   .editor-toolbar {
