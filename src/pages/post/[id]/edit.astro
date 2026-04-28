@@ -102,8 +102,12 @@ if (post.author_id !== user.id) {
   </div>
 </Layout>
 
-<script is:inline>
+<script is:inline data-astro-rerun>
+(function initEditPostPage() {
   const form = document.getElementById('post-form');
+  if (!form || form.dataset.editReady === 'true') return;
+  form.dataset.editReady = 'true';
+
   const categorySelect = document.getElementById('post-category');
   const sportGroup = document.getElementById('sport-type-group');
   const uploadBtn = document.getElementById('upload-btn');
@@ -389,6 +393,7 @@ if (post.author_id !== user.id) {
       submitBtn.textContent = document.documentElement.lang === 'zh-CN' ? '保存' : 'Save';
     }
   });
+})();
 </script>
 
 <style>
