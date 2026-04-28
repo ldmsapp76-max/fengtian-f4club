@@ -40,7 +40,10 @@ const cardClass = `post-card post-card-${post.category}`;
     <!-- 图片区 + 作者信息叠加 -->
     <div class={`post-media ${thumbnailUrl ? 'has-image' : 'is-generated'}`}>
       {thumbnailUrl ? (
-        <img src={thumbnailUrl} alt="" loading="lazy" />
+        <>
+          <img class="media-backdrop" src={thumbnailUrl} alt="" loading="lazy" aria-hidden="true" />
+          <img class="media-image" src={thumbnailUrl} alt="" loading="lazy" />
+        </>
       ) : (
         <>
           <span class="media-symbol">{categoryEmoji[post.category] || '✦'}</span>
@@ -146,14 +149,32 @@ const cardClass = `post-card post-card-${post.category}`;
   }
 
   .post-media.has-image img {
+    display: block;
+  }
+
+  .post-media.has-image .media-backdrop {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    filter: blur(18px) saturate(1.18);
+    opacity: 0.42;
+    transform: scale(1.12);
+  }
+
+  .post-media.has-image .media-image {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: rgba(5,7,11,0.2);
     transition: transform var(--duration-slow) var(--ease-out);
   }
 
-  .post-card:hover .post-media.has-image img {
-    transform: scale(1.05);
+  .post-card:hover .post-media.has-image .media-image {
+    transform: scale(1.03);
   }
 
   .post-media.is-generated {
