@@ -112,6 +112,7 @@ if (post.author_id !== user.id) {
   const attachedImagesEl = document.getElementById('attached-images');
   const contentEditor = document.getElementById('post-content');
   const attachedImages = [];
+  let draggedImageIndex = null;
 
   function extractImagesFromContent(content) {
     return content
@@ -130,6 +131,8 @@ if (post.author_id !== user.id) {
     attachedImages.forEach((image, index) => {
       const item = document.createElement('div');
       item.className = 'attached-image';
+      item.draggable = true;
+      item.dataset.imageIndex = String(index);
 
       const img = document.createElement('img');
       img.src = image.url;
@@ -141,11 +144,14 @@ if (post.author_id !== user.id) {
 
       const name = document.createElement('span');
       name.textContent = image.alt || 'Image';
+      name.title = image.alt || 'Image';
 
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.dataset.removeImage = String(index);
-      remove.textContent = 'Remove';
+      remove.className = 'attached-image-remove';
+      remove.setAttribute('aria-label', 'Remove image');
+      remove.textContent = '×';
 
       meta.append(name, remove);
       item.append(img, meta);
@@ -164,6 +170,52 @@ if (post.author_id !== user.id) {
 
     attachedImages.splice(Number(removeBtn.dataset.removeImage), 1);
     renderAttachedImages();
+  });
+
+  attachedImagesEl?.addEventListener('dragstart', (event) => {
+    const item = event.target.closest('.attached-image');
+    if (!item) return;
+
+    draggedImageIndex = Number(item.dataset.imageIndex);
+    item.classList.add('is-dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(draggedImageIndex));
+  });
+
+  attachedImagesEl?.addEventListener('dragover', (event) => {
+    const item = event.target.closest('.attached-image');
+    if (!item || draggedImageIndex === null) return;
+
+    event.preventDefault();
+    item.classList.add('is-drag-over');
+    event.dataTransfer.dropEffect = 'move';
+  });
+
+  attachedImagesEl?.addEventListener('dragleave', (event) => {
+    const item = event.target.closest('.attached-image');
+    item?.classList.remove('is-drag-over');
+  });
+
+  attachedImagesEl?.addEventListener('drop', (event) => {
+    const item = event.target.closest('.attached-image');
+    if (!item || draggedImageIndex === null) return;
+
+    event.preventDefault();
+    const targetIndex = Number(item.dataset.imageIndex);
+    if (targetIndex !== draggedImageIndex) {
+      const [moved] = attachedImages.splice(draggedImageIndex, 1);
+      attachedImages.splice(targetIndex, 0, moved);
+    }
+
+    draggedImageIndex = null;
+    renderAttachedImages();
+  });
+
+  attachedImagesEl?.addEventListener('dragend', () => {
+    draggedImageIndex = null;
+    attachedImagesEl
+      .querySelectorAll('.attached-image')
+      .forEach((item) => item.classList.remove('is-dragging', 'is-drag-over'));
   });
 
   categorySelect?.addEventListener('change', () => {
@@ -329,23 +381,43 @@ if (post.author_id !== user.id) {
 
   .attached-images {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: var(--space-sm);
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 10px;
     margin-top: var(--space-sm);
   }
 
   .attached-image {
+    position: relative;
     overflow: hidden;
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     background: rgba(255,255,255,0.04);
+    cursor: grab;
+    transition:
+      border-color var(--duration-fast),
+      opacity var(--duration-fast),
+      transform var(--duration-fast);
+  }
+
+  .attached-image:active {
+    cursor: grabbing;
+  }
+
+  .attached-image.is-dragging {
+    opacity: 0.45;
+    transform: scale(0.98);
+  }
+
+  .attached-image.is-drag-over {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-subtle);
   }
 
   .attached-image img {
     display: block;
     width: 100%;
-    aspect-ratio: 4 / 3;
-    object-fit: contain;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
     background: rgba(5,7,11,0.35);
   }
 
@@ -354,7 +426,8 @@ if (post.author_id !== user.id) {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-xs);
-    padding: 6px 8px;
+    min-height: 28px;
+    padding: 4px 6px;
   }
 
   .attached-image-meta span {
@@ -363,14 +436,31 @@ if (post.author_id !== user.id) {
     text-overflow: ellipsis;
     white-space: nowrap;
     color: var(--text-muted);
-    font-size: var(--text-xs);
+    font-size: 0.68rem;
+    line-height: 1.2;
   }
 
-  .attached-image-meta button {
-    flex-shrink: 0;
-    color: var(--accent);
-    font-size: var(--text-xs);
+  .attached-image-remove {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-full);
+    background: rgba(5,7,11,0.78);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .attached-image-remove:hover {
+    color: #fff;
+    background: var(--accent);
   }
 
   .editor-toolbar {
