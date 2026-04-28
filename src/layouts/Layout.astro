@@ -212,6 +212,9 @@ const currentPath = Astro.url.pathname;
 /* ---- NAV ---- */
 .nav {
   position: sticky; top: 0; z-index: 100;
+  width: 100%;
+  max-width: 100vw;
+  overflow: clip;
   height: var(--nav-height);
   background: rgba(5,6,8,0.72);
   backdrop-filter: blur(24px) saturate(160%);
@@ -373,7 +376,71 @@ const currentPath = Astro.url.pathname;
 .nav-hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
 
 @media (max-width: 720px) {
-  .nav-hamburger { display: flex; }
+  .nav-inner {
+    max-width: 100vw;
+    min-width: 0;
+    gap: var(--space-sm);
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .nav-brand {
+    min-width: 0;
+    max-width: 88px;
+    overflow: hidden;
+  }
+
+  .brand-icon {
+    font-size: 1.18rem;
+  }
+
+  .brand-sub {
+    font-size: 0.9rem;
+  }
+
+  .nav-actions {
+    min-width: 0;
+    flex: 1;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .nav-icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .nav-user-area {
+    min-width: 0;
+    gap: 6px;
+  }
+
+  .nav-avatar {
+    width: 46px;
+    padding: 3px 8px;
+    justify-content: center;
+  }
+
+  .nav-avatar-name,
+  .nav-logout {
+    display: none;
+  }
+
+  .nav-post-btn {
+    min-width: 0;
+    padding: 7px 10px;
+  }
+
+  .nav-post-btn span:first-child {
+    display: none;
+  }
+
+  .nav-hamburger {
+    display: flex;
+    flex: 0 0 34px;
+    margin-left: 0;
+  }
+
   .nav-links {
     display: none;
     position: fixed; top: var(--nav-height); left: 0; right: 0;
@@ -387,6 +454,28 @@ const currentPath = Astro.url.pathname;
   .nav-links.open { display: flex; }
   .nav-link { padding: 10px var(--space-md); border-radius: var(--radius-md); }
   .nav-link-text { font-size: var(--text-base); }
+}
+
+@media (max-width: 420px) {
+  .nav-inner {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .nav-brand {
+    max-width: 76px;
+  }
+
+  .brand-sub {
+    max-width: 34px;
+    overflow: hidden;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .nav-post-btn {
+    padding: 7px 9px;
+  }
 }
 
 /* ---- MAIN ---- */
