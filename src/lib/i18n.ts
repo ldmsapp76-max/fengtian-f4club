@@ -7,6 +7,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'nav.home': { zh: '首页', en: 'Home' },
   'nav.gaming': { zh: '游戏', en: 'Gaming' },
   'nav.movies': { zh: '电影', en: 'Movies' },
+  'nav.music': { zh: '音乐', en: 'Music' },
   'nav.sports': { zh: '运动', en: 'Sports' },
   'nav.english': { zh: '学英语', en: 'English' },
   'nav.newPost': { zh: '发帖', en: 'New Post' },
@@ -16,6 +17,7 @@ const translations: Record<string, Record<Lang, string>> = {
   // Categories
   'cat.gaming': { zh: '🎮 游戏', en: '🎮 Gaming' },
   'cat.movies': { zh: '🎬 电影', en: '🎬 Movies' },
+  'cat.music': { zh: '🎵 音乐', en: '🎵 Music' },
   'cat.sports': { zh: '🏀 运动', en: '🏀 Sports' },
   'cat.english': { zh: '📖 学英语', en: '📖 English' },
 

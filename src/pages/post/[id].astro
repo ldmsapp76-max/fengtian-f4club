@@ -32,8 +32,53 @@ if (!post) {
   return Astro.redirect('/');
 }
 
+function getYouTubeEmbedUrl(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    const host = url.hostname.replace(/^www\./, '');
+    let videoId = '';
+
+    if (host === 'youtu.be') {
+      videoId = url.pathname.split('/').filter(Boolean)[0] || '';
+    } else if (host === 'youtube.com' || host === 'm.youtube.com') {
+      if (url.pathname === '/watch') {
+        videoId = url.searchParams.get('v') || '';
+      } else if (url.pathname.startsWith('/shorts/') || url.pathname.startsWith('/embed/') || url.pathname.startsWith('/live/')) {
+        videoId = url.pathname.split('/').filter(Boolean)[1] || '';
+      }
+    }
+
+    return /^[A-Za-z0-9_-]{11}$/.test(videoId)
+      ? `https://www.youtube-nocookie.com/embed/${videoId}`
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function youtubeEmbedHtml(rawUrl: string): string {
+  const embedUrl = getYouTubeEmbedUrl(rawUrl);
+  if (!embedUrl) return rawUrl;
+
+  return `<div class="youtube-embed"><iframe src="${embedUrl}" title="YouTube video player" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
+}
+
+function renderPostContent(content: string): string {
+  const withMarkdownEmbeds = content.replace(
+    /(?<!!)\[([^\]]+)\]\((https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/[^)\s]+)\)/g,
+    (_match, _label, url) => youtubeEmbedHtml(url),
+  );
+
+  const withBareEmbeds = withMarkdownEmbeds.replace(
+    /(^|\n)\s*(https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/[^\s<]+)\s*(?=\n|$)/g,
+    (_match, prefix, url) => `${prefix}\n${youtubeEmbedHtml(url)}\n`,
+  );
+
+  return marked.parse(withBareEmbeds, { breaks: true }) as string;
+}
+
 // Render markdown content. Keep user-entered line breaks in short-form posts.
-const htmlContent = marked.parse(post.content, { breaks: true });
+const htmlContent = renderPostContent(post.content);
 const isAuthor = user && user.id === post.author_id;
 ---
 
@@ -213,5 +258,25 @@ const isAuthor = user && user.id === post.author_id;
   .author-actions {
     display: flex;
     gap: var(--space-sm);
+  }
+
+  :global(.youtube-embed) {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    margin: 1.25em 0;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-default);
+    background: #000;
+    box-shadow: var(--shadow-card);
+  }
+
+  :global(.youtube-embed iframe) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
   }
 </style>

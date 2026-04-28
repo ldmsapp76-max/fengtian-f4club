@@ -42,6 +42,7 @@ if (!user) {
             <select id="post-category" class="select" required>
               <option value="gaming">🎮 {lang === 'zh' ? '游戏' : 'Gaming'}</option>
               <option value="movies">🎬 {lang === 'zh' ? '电影' : 'Movies'}</option>
+              <option value="music">🎵 {lang === 'zh' ? '音乐' : 'Music'}</option>
               <option value="sports">🏀 {lang === 'zh' ? '运动' : 'Sports'}</option>
               <option value="english">📖 {lang === 'zh' ? '学英语' : 'English'}</option>
             </select>
@@ -107,8 +108,12 @@ if (!user) {
   </div>
 </Layout>
 
-<script is:inline>
+<script is:inline data-astro-rerun>
+(function initNewPostPage() {
   const form = document.getElementById('post-form');
+  if (!form || form.dataset.newPostReady === 'true') return;
+  form.dataset.newPostReady = 'true';
+
   const categorySelect = document.getElementById('post-category');
   const sportGroup = document.getElementById('sport-type-group');
   const uploadBtn = document.getElementById('upload-btn');
@@ -301,6 +306,7 @@ if (!user) {
       submitBtn.textContent = '🚀 发布';
     }
   });
+})();
 </script>
 
 <style>

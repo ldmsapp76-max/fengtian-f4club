@@ -11,6 +11,7 @@ const { category, sportType, lang = 'zh' } = Astro.props;
 const categoryConfig: Record<string, { emoji: string; zh: string; en: string; cssClass: string }> = {
   gaming: { emoji: '🎮', zh: '游戏', en: 'Gaming', cssClass: 'tag-gaming' },
   movies: { emoji: '🎬', zh: '电影', en: 'Movies', cssClass: 'tag-movies' },
+  music: { emoji: '🎵', zh: '音乐', en: 'Music', cssClass: 'tag-music' },
   sports: { emoji: '🏀', zh: '运动', en: 'Sports', cssClass: 'tag-sports' },
   english: { emoji: '📖', zh: '学英语', en: 'English', cssClass: 'tag-english' },
 };

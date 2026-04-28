@@ -26,6 +26,7 @@ const preview = post.content
 const categoryEmoji: Record<string, string> = {
   gaming: '🎮',
   movies: '🎬',
+  music: '🎵',
   sports: '🏀',
   english: '📚',
 };
@@ -110,6 +111,7 @@ const cardClass = `post-card post-card-${post.category}`;
 
   .post-card-gaming  { --card-accent: var(--cat-gaming); }
   .post-card-movies  { --card-accent: var(--cat-movies); }
+  .post-card-music   { --card-accent: var(--cat-music); }
   .post-card-sports  { --card-accent: var(--cat-sports); }
   .post-card-english { --card-accent: var(--cat-english); }
 

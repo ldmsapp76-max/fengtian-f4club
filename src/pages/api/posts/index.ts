@@ -1,6 +1,6 @@
 // 奉天F4Club — Posts API (Create)
 import type { APIRoute } from 'astro';
-import { createPost } from '../../../lib/db';
+import { createPost, ensureMusicCategory } from '../../../lib/db';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = (locals as any).user;
@@ -25,12 +25,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const validCategories = ['gaming', 'movies', 'sports', 'english'];
+    const validCategories = ['gaming', 'movies', 'music', 'sports', 'english'];
     if (!validCategories.includes(category)) {
       return new Response(JSON.stringify({ error: 'Invalid category' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
+    }
+
+    if (category === 'music') {
+      await ensureMusicCategory(DB);
     }
 
     const id = await createPost(DB, {

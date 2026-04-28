@@ -9,7 +9,7 @@ const { slug } = Astro.params;
 const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
 const user = (Astro.locals as any).user;
 
-const validCategories = ['gaming', 'movies', 'sports', 'english'];
+const validCategories = ['gaming', 'movies', 'music', 'sports', 'english'];
 if (!slug || !validCategories.includes(slug)) {
   return Astro.redirect('/');
 }
@@ -17,6 +17,7 @@ if (!slug || !validCategories.includes(slug)) {
 const categoryConfig: Record<string, { emoji: string; zh: string; en: string }> = {
   gaming: { emoji: '🎮', zh: '游戏', en: 'Gaming' },
   movies: { emoji: '🎬', zh: '电影', en: 'Movies' },
+  music: { emoji: '🎵', zh: '音乐', en: 'Music' },
   sports: { emoji: '🏀', zh: '运动', en: 'Sports' },
   english: { emoji: '📖', zh: '学英语', en: 'English' },
 };
