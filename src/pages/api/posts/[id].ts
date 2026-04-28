@@ -34,7 +34,27 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     const body = await request.json();
     const { title, content, category, sportType } = body;
 
-    await updatePost(DB, postId, { title, content, category, sportType });
+    if (!title || !content || !category) {
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const validCategories = ['gaming', 'movies', 'sports', 'english'];
+    if (!validCategories.includes(category)) {
+      return new Response(JSON.stringify({ error: 'Invalid category' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    await updatePost(DB, postId, {
+      title,
+      content,
+      category,
+      sportType: category === 'sports' ? sportType : undefined,
+    });
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,

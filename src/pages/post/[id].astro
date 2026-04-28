@@ -81,6 +81,9 @@ const isAuthor = user && user.id === post.author_id;
 
         {isAuthor && (
           <div class="author-actions">
+            <a class="btn btn-ghost btn-sm" href={`/post/${post.id}/edit`}>
+              {lang === 'zh' ? '编辑' : 'Edit'}
+            </a>
             <button class="btn btn-ghost btn-sm" id="delete-btn" data-post-id={post.id}>
               {lang === 'zh' ? '🗑 删除' : '🗑 Delete'}
             </button>
