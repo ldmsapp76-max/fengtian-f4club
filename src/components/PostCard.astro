@@ -18,7 +18,10 @@ const thumbnailUrl = firstImageMatch ? firstImageMatch[1] : null;
 
 const preview = post.content
   .replace(/!\[.*?\]\(.*?\)/g, '')
+  .replace(/(?<!!)\[[^\]]*\]\(https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/[^)\s]+\)/gi, '')
+  .replace(/https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/[^\s<)]+/gi, '')
   .replace(/[#*`\[\]!()]/g, '')
+  .replace(/[ \t]+\n/g, '\n')
   .replace(/\n{3,}/g, '\n\n')
   .slice(0, 100)
   .trim();
