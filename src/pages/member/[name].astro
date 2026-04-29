@@ -19,8 +19,10 @@ try {
     const DB = runtime.env.DB;
     member = await getUserByNickname(DB, decodeURIComponent(name));
     if (member) {
-      posts = await getPosts(DB, { authorId: member.id, userId: currentUser?.id });
-      postCount = await getPostCount(DB, member.id);
+      [posts, postCount] = await Promise.all([
+        getPosts(DB, { authorId: member.id, userId: currentUser?.id }),
+        getPostCount(DB, member.id),
+      ]);
     }
   }
 } catch (e) {

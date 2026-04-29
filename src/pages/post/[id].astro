@@ -19,10 +19,10 @@ try {
   const runtime = (Astro.locals as any).runtime;
   if (runtime?.env?.DB) {
     const DB = runtime.env.DB;
-    post = await getPostById(DB, Number(id), user?.id);
-    if (post) {
-      comments = await getCommentsByPostId(DB, Number(id));
-    }
+    [post, comments] = await Promise.all([
+      getPostById(DB, Number(id), user?.id),
+      getCommentsByPostId(DB, Number(id)),
+    ]);
   }
 } catch (e) {
   console.error('Failed to load post:', e);

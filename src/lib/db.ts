@@ -43,6 +43,30 @@ export interface CommentWithPostAuthor extends Comment {
   post_author_id: number;
 }
 
+let performanceIndexesPromise: Promise<void> | null = null;
+let expandedCategoriesPromise: Promise<void> | null = null;
+
+export async function ensurePerformanceIndexes(db: D1Database): Promise<void> {
+  if (!performanceIndexesPromise) {
+    performanceIndexesPromise = db
+      .batch([
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_category_created_at ON posts(category, created_at DESC)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_posts_author_created_at ON posts(author_id, created_at DESC)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_comments_post_created_at ON comments(post_id, created_at ASC)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_likes_post_id ON likes(post_id)'),
+        db.prepare('CREATE INDEX IF NOT EXISTS idx_likes_user_post ON likes(user_id, post_id)'),
+      ])
+      .then(() => undefined)
+      .catch((error) => {
+        performanceIndexesPromise = null;
+        throw error;
+      });
+  }
+
+  await performanceIndexesPromise;
+}
+
 // ---- Users ----
 
 export async function getUserByNickname(db: D1Database, nickname: string): Promise<User | null> {
@@ -81,37 +105,16 @@ export async function getPosts(
   } = {}
 ): Promise<Post[]> {
   const { category, authorId, limit = 20, offset = 0, userId } = options;
+  await ensurePerformanceIndexes(db);
 
   let query = `
-    SELECT
-      p.*,
-      u.nickname as author_nickname,
-      u.avatar_emoji as author_emoji,
-      u.role as author_role,
-      COALESCE(comment_counts.comment_count, 0) as comment_count,
-      COALESCE(like_counts.like_count, 0) as like_count,
-      ${userId ? 'CASE WHEN user_likes.user_id IS NULL THEN 0 ELSE 1 END as liked_by_user' : '0 as liked_by_user'}
-    FROM posts p
-    JOIN users u ON p.author_id = u.id
-    LEFT JOIN (
-      SELECT post_id, COUNT(*) as comment_count
-      FROM comments
-      GROUP BY post_id
-    ) comment_counts ON comment_counts.post_id = p.id
-    LEFT JOIN (
-      SELECT post_id, COUNT(*) as like_count
-      FROM likes
-      GROUP BY post_id
-    ) like_counts ON like_counts.post_id = p.id
-    ${userId ? 'LEFT JOIN likes user_likes ON user_likes.post_id = p.id AND user_likes.user_id = ?' : ''}
+    WITH filtered_posts AS (
+      SELECT p.*
+      FROM posts p
   `;
 
   const conditions: string[] = [];
   const bindings: any[] = [];
-
-  if (userId) {
-    bindings.push(userId);
-  }
 
   if (category) {
     conditions.push('p.category = ?');
@@ -126,8 +129,28 @@ export async function getPosts(
     query += ' WHERE ' + conditions.join(' AND ');
   }
 
-  query += ' ORDER BY p.created_at DESC LIMIT ? OFFSET ?';
+  query += `
+      ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?
+    )
+    SELECT
+      fp.*,
+      u.nickname as author_nickname,
+      u.avatar_emoji as author_emoji,
+      u.role as author_role,
+      (SELECT COUNT(*) FROM comments c WHERE c.post_id = fp.id) as comment_count,
+      (SELECT COUNT(*) FROM likes l WHERE l.post_id = fp.id) as like_count,
+      CASE
+        WHEN ? IS NULL THEN 0
+        ELSE EXISTS(SELECT 1 FROM likes ul WHERE ul.post_id = fp.id AND ul.user_id = ?)
+      END as liked_by_user
+    FROM filtered_posts fp
+    JOIN users u ON fp.author_id = u.id
+    ORDER BY fp.created_at DESC
+  `;
+
   bindings.push(limit, offset);
+  bindings.push(userId || null, userId || null);
 
   const stmt = db.prepare(query);
   const result = await stmt.bind(...bindings).all<Post>();
@@ -135,6 +158,8 @@ export async function getPosts(
 }
 
 export async function getPostById(db: D1Database, id: number, userId?: number): Promise<Post | null> {
+  await ensurePerformanceIndexes(db);
+
   const query = `
     SELECT
       p.*,
@@ -142,14 +167,17 @@ export async function getPostById(db: D1Database, id: number, userId?: number): 
       u.avatar_emoji as author_emoji,
       u.role as author_role,
       (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count
-      ${userId ? `,(SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = ${userId}) as liked_by_user` : ',0 as liked_by_user'}
+      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count,
+      CASE
+        WHEN ? IS NULL THEN 0
+        ELSE EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = ?)
+      END as liked_by_user
     FROM posts p
     JOIN users u ON p.author_id = u.id
     WHERE p.id = ?
   `;
 
-  const result = await db.prepare(query).bind(id).first<Post>();
+  const result = await db.prepare(query).bind(userId || null, userId || null, id).first<Post>();
   return result || null;
 }
 
@@ -180,58 +208,72 @@ export async function deletePost(db: D1Database, id: number): Promise<void> {
 }
 
 export async function ensureExpandedCategories(db: D1Database): Promise<void> {
-  const table = await db
-    .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'posts'")
-    .first<{ sql: string }>();
+  if (!expandedCategoriesPromise) {
+    expandedCategoriesPromise = (async () => {
+      const table = await db
+        .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'posts'")
+        .first<{ sql: string }>();
 
-  if (table?.sql?.includes("'music'") && table.sql.includes("'ai'")) {
-    return;
+      if (table?.sql?.includes("'music'") && table.sql.includes("'ai'")) {
+        return;
+      }
+
+      await db.batch([
+        db.prepare('PRAGMA defer_foreign_keys = true'),
+        db.prepare(`
+          CREATE TABLE posts_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          author_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          category TEXT NOT NULL CHECK(category IN ('gaming', 'movies', 'music', 'ai', 'sports', 'english')),
+          sport_type TEXT CHECK(sport_type IN ('basketball', 'badminton', 'marathon', NULL)),
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (author_id) REFERENCES users(id)
+        )`),
+        db.prepare(`
+          INSERT INTO posts_new (
+            id,
+            author_id,
+            title,
+            content,
+            category,
+            sport_type,
+            created_at,
+            updated_at
+          )
+          SELECT
+            id,
+            author_id,
+            title,
+            content,
+            category,
+            sport_type,
+            created_at,
+            updated_at
+          FROM posts
+        `),
+        db.prepare('DROP TABLE posts'),
+        db.prepare('ALTER TABLE posts_new RENAME TO posts'),
+      ]);
+
+      performanceIndexesPromise = null;
+      await ensurePerformanceIndexes(db);
+    })().catch((error) => {
+      expandedCategoriesPromise = null;
+      throw error;
+    });
   }
 
-  await db.batch([
-    db.prepare('PRAGMA defer_foreign_keys = true'),
-    db.prepare(`
-      CREATE TABLE posts_new (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      author_id INTEGER NOT NULL,
-      title TEXT NOT NULL,
-      content TEXT NOT NULL,
-      category TEXT NOT NULL CHECK(category IN ('gaming', 'movies', 'music', 'ai', 'sports', 'english')),
-      sport_type TEXT CHECK(sport_type IN ('basketball', 'badminton', 'marathon', NULL)),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (author_id) REFERENCES users(id)
-    )`),
-    db.prepare(`
-      INSERT INTO posts_new (
-        id,
-        author_id,
-        title,
-        content,
-        category,
-        sport_type,
-        created_at,
-        updated_at
-      )
-      SELECT
-        id,
-        author_id,
-        title,
-        content,
-        category,
-        sport_type,
-        created_at,
-        updated_at
-      FROM posts
-    `),
-    db.prepare('DROP TABLE posts'),
-    db.prepare('ALTER TABLE posts_new RENAME TO posts'),
-  ]);
+  await expandedCategoriesPromise;
 }
 
 // ---- Comments ----
 
 export async function getCommentsByPostId(db: D1Database, postId: number): Promise<Comment[]> {
+  await ensurePerformanceIndexes(db);
+
   const result = await db
     .prepare(`
       SELECT c.*, u.nickname as author_nickname, u.avatar_emoji as author_emoji
@@ -276,6 +318,8 @@ export async function deleteComment(db: D1Database, id: number): Promise<void> {
 // ---- Likes ----
 
 export async function toggleLike(db: D1Database, postId: number, userId: number): Promise<boolean> {
+  await ensurePerformanceIndexes(db);
+
   const existing = await db
     .prepare('SELECT id FROM likes WHERE post_id = ? AND user_id = ?')
     .bind(postId, userId)
@@ -291,6 +335,8 @@ export async function toggleLike(db: D1Database, postId: number, userId: number)
 }
 
 export async function getLikeCount(db: D1Database, postId: number): Promise<number> {
+  await ensurePerformanceIndexes(db);
+
   const result = await db.prepare('SELECT COUNT(*) as count FROM likes WHERE post_id = ?').bind(postId).first<{ count: number }>();
   return result?.count || 0;
 }
@@ -306,6 +352,8 @@ export async function ensurePasswordsSet(db: D1Database, defaultHash: string): P
 }
 
 export async function getPostCount(db: D1Database, authorId?: number): Promise<number> {
+  await ensurePerformanceIndexes(db);
+
   let query = 'SELECT COUNT(*) as count FROM posts';
   if (authorId) {
     query += ' WHERE author_id = ?';

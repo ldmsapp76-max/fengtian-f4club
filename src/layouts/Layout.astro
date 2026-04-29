@@ -184,7 +184,7 @@ const currentPath = Astro.url.pathname;
     fetch(key, {
       method: 'GET',
       credentials: 'same-origin',
-      headers: { 'X-F4-Prefetch': '1' },
+      cache: 'default',
       priority: 'low',
     }).catch(() => prefetched.delete(key));
   };
@@ -202,6 +202,36 @@ const currentPath = Astro.url.pathname;
       const anchor = event.target.closest('a[href]');
       prefetchPage(anchor);
     }, { passive: true });
+
+    document.addEventListener('click', (event) => {
+      const anchor = event.target.closest('a[href]');
+      if (canPrefetch(anchor)) {
+        document.documentElement.classList.add('is-navigating');
+      }
+    }, { capture: true });
+
+    const warmVisibleLinks = () => {
+      const anchors = Array.from(document.querySelectorAll(
+        '.post-card-link, .category-filter a, .nav-link, .nav-post-btn, .author-actions a'
+      )).slice(0, 12);
+      anchors.forEach((anchor, index) => {
+        setTimeout(() => prefetchPage(anchor), 120 * index);
+      });
+    };
+
+    const scheduleWarmup = () => {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(warmVisibleLinks, { timeout: 1800 });
+      } else {
+        setTimeout(warmVisibleLinks, 600);
+      }
+    };
+
+    document.addEventListener('astro:page-load', () => {
+      document.documentElement.classList.remove('is-navigating');
+      scheduleWarmup();
+    });
+    scheduleWarmup();
   }
 })();
 </script>

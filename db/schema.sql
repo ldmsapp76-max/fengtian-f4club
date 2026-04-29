@@ -46,6 +46,13 @@ CREATE TABLE IF NOT EXISTS likes (
   UNIQUE(post_id, user_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_category_created_at ON posts(category, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_author_created_at ON posts(author_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_comments_post_created_at ON comments(post_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_likes_post_id ON likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_likes_user_post ON likes(user_id, post_id);
+
 -- Seed initial users with pre-computed password hash for '123456'
 -- Hash = SHA-256('f4club-2026-fengtian' + '123456')
 INSERT OR IGNORE INTO users (nickname, role, avatar_emoji, password_hash) VALUES

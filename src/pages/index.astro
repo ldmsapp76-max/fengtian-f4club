@@ -16,11 +16,13 @@ try {
   const runtime = (Astro.locals as any).runtime;
   if (runtime?.env?.DB) {
     const DB = runtime.env.DB;
-    posts = await getPosts(DB, {
-      category: category || undefined,
-      userId: user?.id,
-    });
-    members = await getAllUsers(DB);
+    [posts, members] = await Promise.all([
+      getPosts(DB, {
+        category: category || undefined,
+        userId: user?.id,
+      }),
+      getAllUsers(DB),
+    ]);
   }
 } catch (e) {
   console.error('Failed to load posts:', e);
