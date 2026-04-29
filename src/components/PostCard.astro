@@ -14,7 +14,19 @@ interface Props {
 const { post, lang = 'zh', index = 0 } = Astro.props;
 
 const firstImageMatch = post.content.match(/!\[.*?\]\((.*?)\)/);
-const thumbnailUrl = firstImageMatch ? firstImageMatch[1] : null;
+const getYoutubeVideoId = (content: string): string | null => {
+  const match = content.match(
+    /(?:youtube\.com\/watch\?[^)\s]*v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/|youtube\.com\/live\/)([A-Za-z0-9_-]{11})/i
+  );
+  return match?.[1] || null;
+};
+const youtubeVideoId = firstImageMatch ? null : getYoutubeVideoId(post.content);
+const thumbnailUrl = firstImageMatch
+  ? firstImageMatch[1]
+  : youtubeVideoId
+    ? `https://img.youtube.com/vi/${youtubeVideoId}/hqdefault.jpg`
+    : null;
+const isYoutubeThumbnail = !firstImageMatch && Boolean(youtubeVideoId);
 
 const preview = post.content
   .replace(/!\[.*?\]\(.*?\)/g, '')
@@ -48,6 +60,7 @@ const cardClass = `post-card post-card-${post.category}`;
         <>
           <img class="media-backdrop" src={thumbnailUrl} alt="" loading="lazy" aria-hidden="true" />
           <img class="media-image" src={thumbnailUrl} alt="" loading="lazy" />
+          {isYoutubeThumbnail && <span class="youtube-play" aria-hidden="true">▶</span>}
         </>
       ) : (
         <>
@@ -182,6 +195,24 @@ const cardClass = `post-card post-card-${post.category}`;
 
   .post-card:hover .post-media.has-image .media-image {
     transform: scale(1.03);
+  }
+
+  .youtube-play {
+    position: absolute;
+    z-index: 3;
+    inset: 50% auto auto 50%;
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 38px;
+    padding-left: 3px;
+    border-radius: 12px;
+    color: white;
+    background: rgba(229, 9, 20, 0.9);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.36);
+    transform: translate(-50%, -50%);
+    font-size: 1rem;
+    line-height: 1;
   }
 
   .post-media.is-generated {
