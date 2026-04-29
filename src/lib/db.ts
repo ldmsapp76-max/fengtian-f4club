@@ -188,10 +188,10 @@ export async function ensureExpandedCategories(db: D1Database): Promise<void> {
     return;
   }
 
-  await db.exec(`
-    PRAGMA foreign_keys = OFF;
-
-    CREATE TABLE posts_new (
+  await db.batch([
+    db.prepare('PRAGMA defer_foreign_keys = true'),
+    db.prepare(`
+      CREATE TABLE posts_new (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       author_id INTEGER NOT NULL,
       title TEXT NOT NULL,
@@ -201,34 +201,32 @@ export async function ensureExpandedCategories(db: D1Database): Promise<void> {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (author_id) REFERENCES users(id)
-    );
-
-    INSERT INTO posts_new (
-      id,
-      author_id,
-      title,
-      content,
-      category,
-      sport_type,
-      created_at,
-      updated_at
-    )
-    SELECT
-      id,
-      author_id,
-      title,
-      content,
-      category,
-      sport_type,
-      created_at,
-      updated_at
-    FROM posts;
-
-    DROP TABLE posts;
-    ALTER TABLE posts_new RENAME TO posts;
-
-    PRAGMA foreign_keys = ON;
-  `);
+    )`),
+    db.prepare(`
+      INSERT INTO posts_new (
+        id,
+        author_id,
+        title,
+        content,
+        category,
+        sport_type,
+        created_at,
+        updated_at
+      )
+      SELECT
+        id,
+        author_id,
+        title,
+        content,
+        category,
+        sport_type,
+        created_at,
+        updated_at
+      FROM posts
+    `),
+    db.prepare('DROP TABLE posts'),
+    db.prepare('ALTER TABLE posts_new RENAME TO posts'),
+  ]);
 }
 
 // ---- Comments ----
