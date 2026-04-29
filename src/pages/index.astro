@@ -31,14 +31,15 @@ const categories = [
   { key: 'gaming', label: lang === 'zh' ? '游戏' : 'Gaming', emoji: '🎮', tone: 'gaming' },
   { key: 'movies', label: lang === 'zh' ? '电影' : 'Movies', emoji: '🎬', tone: 'movies' },
   { key: 'music', label: lang === 'zh' ? '音乐' : 'Music', emoji: '🎵', tone: 'music' },
+  { key: 'ai', label: lang === 'zh' ? 'AI技术' : 'AI Tech', emoji: '🤖', tone: 'ai' },
   { key: 'sports', label: lang === 'zh' ? '运动' : 'Sports', emoji: '🏀', tone: 'sports' },
   { key: 'english', label: lang === 'zh' ? '英语' : 'English', emoji: '📚', tone: 'english' },
 ];
 
 const activeCategory = categories.find((cat) => cat.key === category) || categories[0];
 const heroSubtitle = lang === 'zh'
-  ? '四个老同事的私密会客厅，游戏、电影、音乐、运动和英语都可以随手开聊。'
-  : 'A private lounge for four former teammates: games, movies, music, sports, and English notes.';
+  ? '四个老同事的私密会客厅，游戏、电影、音乐、AI技术、运动和英语都可以随手开聊。'
+  : 'A private lounge for four former teammates: games, movies, music, AI tech, sports, and English notes.';
 const memberCount = members.length || 4;
 ---
 
@@ -74,7 +75,7 @@ const memberCount = members.length || 4;
         <div class="status-grid">
           <div>
             <span>{lang === 'zh' ? '频道' : 'Channels'}</span>
-            <strong>5</strong>
+            <strong>6</strong>
           </div>
           <div>
             <span>{lang === 'zh' ? '当前' : 'Now'}</span>
@@ -138,6 +139,7 @@ const memberCount = members.length || 4;
             <span>🎮 Game</span>
             <span>🎬 Movie</span>
             <span>🎵 Music</span>
+            <span>🤖 AI</span>
             <span>🏀 Sport</span>
             <span>📚 English</span>
           </div>
@@ -375,6 +377,7 @@ const memberCount = members.length || 4;
   .filter-gaming.active { box-shadow: inset 0 -2px 0 var(--cat-gaming); }
   .filter-movies.active { box-shadow: inset 0 -2px 0 var(--cat-movies); }
   .filter-music.active { box-shadow: inset 0 -2px 0 var(--cat-music); }
+  .filter-ai.active { box-shadow: inset 0 -2px 0 var(--cat-ai); }
   .filter-sports.active { box-shadow: inset 0 -2px 0 var(--cat-sports); }
   .filter-english.active { box-shadow: inset 0 -2px 0 var(--cat-english); }
   .filter-all.active { box-shadow: inset 0 -2px 0 var(--accent); }

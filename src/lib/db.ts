@@ -179,12 +179,12 @@ export async function deletePost(db: D1Database, id: number): Promise<void> {
   await db.prepare('DELETE FROM posts WHERE id = ?').bind(id).run();
 }
 
-export async function ensureMusicCategory(db: D1Database): Promise<void> {
+export async function ensureExpandedCategories(db: D1Database): Promise<void> {
   const table = await db
     .prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'posts'")
     .first<{ sql: string }>();
 
-  if (table?.sql?.includes("'music'")) {
+  if (table?.sql?.includes("'music'") && table.sql.includes("'ai'")) {
     return;
   }
 
@@ -196,7 +196,7 @@ export async function ensureMusicCategory(db: D1Database): Promise<void> {
       author_id INTEGER NOT NULL,
       title TEXT NOT NULL,
       content TEXT NOT NULL,
-      category TEXT NOT NULL CHECK(category IN ('gaming', 'movies', 'music', 'sports', 'english')),
+      category TEXT NOT NULL CHECK(category IN ('gaming', 'movies', 'music', 'ai', 'sports', 'english')),
       sport_type TEXT CHECK(sport_type IN ('basketball', 'badminton', 'marathon', NULL)),
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

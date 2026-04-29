@@ -43,6 +43,7 @@ if (!user) {
               <option value="gaming">🎮 {lang === 'zh' ? '游戏' : 'Gaming'}</option>
               <option value="movies">🎬 {lang === 'zh' ? '电影' : 'Movies'}</option>
               <option value="music">🎵 {lang === 'zh' ? '音乐' : 'Music'}</option>
+              <option value="ai">🤖 {lang === 'zh' ? 'AI技术' : 'AI Tech'}</option>
               <option value="sports">🏀 {lang === 'zh' ? '运动' : 'Sports'}</option>
               <option value="english">📖 {lang === 'zh' ? '学英语' : 'English'}</option>
             </select>
@@ -73,7 +74,7 @@ if (!user) {
             </button>
             <span class="upload-status" id="upload-status"></span>
           </div>
-          <div class="upload-preview" id="upload-preview"></div>
+          <div class="attached-images" id="attached-images"></div>
         </div>
 
         <!-- Content -->
@@ -119,8 +120,99 @@ if (!user) {
   const uploadBtn = document.getElementById('upload-btn');
   const fileInput = document.getElementById('file-input');
   const uploadStatus = document.getElementById('upload-status');
-  const uploadPreview = document.getElementById('upload-preview');
+  const attachedImagesEl = document.getElementById('attached-images');
   const contentEditor = document.getElementById('post-content');
+  const attachedImages = [];
+  let draggedImageIndex = null;
+
+  function renderAttachedImages() {
+    if (!attachedImagesEl) return;
+    attachedImagesEl.innerHTML = '';
+
+    attachedImages.forEach((image, index) => {
+      const item = document.createElement('div');
+      item.className = 'attached-image';
+      item.draggable = true;
+      item.dataset.imageIndex = String(index);
+
+      const img = document.createElement('img');
+      img.src = image.url;
+      img.alt = '';
+      img.loading = 'lazy';
+
+      const meta = document.createElement('div');
+      meta.className = 'attached-image-meta';
+
+      const name = document.createElement('span');
+      name.textContent = image.alt || 'Image';
+      name.title = image.alt || 'Image';
+
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.dataset.removeImage = String(index);
+      remove.className = 'attached-image-remove';
+      remove.setAttribute('aria-label', 'Remove image');
+      remove.textContent = '×';
+
+      meta.append(name, remove);
+      item.append(img, meta);
+      attachedImagesEl.appendChild(item);
+    });
+  }
+
+  attachedImagesEl?.addEventListener('click', (event) => {
+    const removeBtn = event.target.closest('[data-remove-image]');
+    if (!removeBtn) return;
+
+    attachedImages.splice(Number(removeBtn.dataset.removeImage), 1);
+    renderAttachedImages();
+  });
+
+  attachedImagesEl?.addEventListener('dragstart', (event) => {
+    const item = event.target.closest('.attached-image');
+    if (!item) return;
+
+    draggedImageIndex = Number(item.dataset.imageIndex);
+    item.classList.add('is-dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(draggedImageIndex));
+  });
+
+  attachedImagesEl?.addEventListener('dragover', (event) => {
+    const item = event.target.closest('.attached-image');
+    if (!item || draggedImageIndex === null) return;
+
+    event.preventDefault();
+    item.classList.add('is-drag-over');
+    event.dataTransfer.dropEffect = 'move';
+  });
+
+  attachedImagesEl?.addEventListener('dragleave', (event) => {
+    const item = event.target.closest('.attached-image');
+    item?.classList.remove('is-drag-over');
+  });
+
+  attachedImagesEl?.addEventListener('drop', (event) => {
+    const item = event.target.closest('.attached-image');
+    if (!item || draggedImageIndex === null) return;
+
+    event.preventDefault();
+    const targetIndex = Number(item.dataset.imageIndex);
+    if (targetIndex !== draggedImageIndex) {
+      const [moved] = attachedImages.splice(draggedImageIndex, 1);
+      attachedImages.splice(targetIndex, 0, moved);
+    }
+
+    draggedImageIndex = null;
+    renderAttachedImages();
+  });
+
+  attachedImagesEl?.addEventListener('dragend', () => {
+    draggedImageIndex = null;
+    attachedImagesEl
+      .querySelectorAll('.attached-image')
+      .forEach((item) => item.classList.remove('is-dragging', 'is-drag-over'));
+  });
 
   // Show/hide sport type based on category
   categorySelect?.addEventListener('change', () => {
@@ -202,20 +294,9 @@ if (!user) {
 
       if (res.ok) {
         const data = await res.json();
-        // Insert markdown image at cursor
         const imgMd = `![${file.name}](${data.url})`;
-        const pos = contentEditor.selectionStart;
-        const before = contentEditor.value.substring(0, pos);
-        const after = contentEditor.value.substring(pos);
-        contentEditor.value = before + '\n' + imgMd + '\n' + after;
-
-        // Show preview
-        const img = document.createElement('img');
-        img.src = data.url;
-        img.style.maxWidth = '200px';
-        img.style.borderRadius = '8px';
-        img.style.marginTop = '8px';
-        uploadPreview.appendChild(img);
+        attachedImages.push({ markdown: imgMd, alt: file.name, url: data.url });
+        renderAttachedImages();
 
         const savedText = uploadFile.compressed
           ? `，${formatFileSize(uploadFile.originalSize)} → ${formatFileSize(uploadFile.file.size)}`
@@ -275,7 +356,9 @@ if (!user) {
     e.preventDefault();
 
     const title = document.getElementById('post-title').value.trim();
-    const content = contentEditor.value.trim();
+    const textContent = contentEditor.value.trim();
+    const imageContent = attachedImages.map((image) => image.markdown).join('\n');
+    const content = [textContent, imageContent].filter(Boolean).join('\n\n');
     const category = categorySelect.value;
     const sportType = document.getElementById('sport-type')?.value || '';
 
@@ -352,6 +435,90 @@ if (!user) {
   .upload-status {
     font-size: var(--text-xs);
     color: var(--text-muted);
+  }
+
+  :global(.attached-images) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+    gap: 10px;
+    margin-top: var(--space-sm);
+  }
+
+  :global(.attached-image) {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: rgba(255,255,255,0.04);
+    cursor: grab;
+    transition:
+      border-color var(--duration-fast),
+      opacity var(--duration-fast),
+      transform var(--duration-fast);
+  }
+
+  :global(.attached-image:active) {
+    cursor: grabbing;
+  }
+
+  :global(.attached-image.is-dragging) {
+    opacity: 0.45;
+    transform: scale(0.98);
+  }
+
+  :global(.attached-image.is-drag-over) {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-subtle);
+  }
+
+  :global(.attached-image img) {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    background: rgba(5,7,11,0.35);
+  }
+
+  :global(.attached-image-meta) {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-xs);
+    min-height: 28px;
+    padding: 4px 6px;
+  }
+
+  :global(.attached-image-meta span) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    line-height: 1.2;
+  }
+
+  :global(.attached-image-remove) {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-full);
+    background: rgba(5,7,11,0.78);
+    border: 1px solid rgba(255,255,255,0.14);
+    color: var(--text-primary);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  :global(.attached-image-remove:hover) {
+    color: #fff;
+    background: var(--accent);
   }
 
   .editor-toolbar {

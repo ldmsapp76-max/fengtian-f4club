@@ -8,6 +8,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'nav.gaming': { zh: '游戏', en: 'Gaming' },
   'nav.movies': { zh: '电影', en: 'Movies' },
   'nav.music': { zh: '音乐', en: 'Music' },
+  'nav.ai': { zh: 'AI技术', en: 'AI Tech' },
   'nav.sports': { zh: '运动', en: 'Sports' },
   'nav.english': { zh: '学英语', en: 'English' },
   'nav.newPost': { zh: '发帖', en: 'New Post' },
@@ -18,6 +19,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'cat.gaming': { zh: '🎮 游戏', en: '🎮 Gaming' },
   'cat.movies': { zh: '🎬 电影', en: '🎬 Movies' },
   'cat.music': { zh: '🎵 音乐', en: '🎵 Music' },
+  'cat.ai': { zh: '🤖 AI技术', en: '🤖 AI Tech' },
   'cat.sports': { zh: '🏀 运动', en: '🏀 Sports' },
   'cat.english': { zh: '📖 学英语', en: '📖 English' },
 

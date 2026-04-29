@@ -1,6 +1,6 @@
 // 奉天F4Club — Post CRUD API
 import type { APIRoute } from 'astro';
-import { ensureMusicCategory, getPostById, updatePost, deletePost } from '../../../lib/db';
+import { ensureExpandedCategories, getPostById, updatePost, deletePost } from '../../../lib/db';
 
 export const PUT: APIRoute = async ({ params, request, locals }) => {
   const user = (locals as any).user;
@@ -41,7 +41,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    const validCategories = ['gaming', 'movies', 'music', 'sports', 'english'];
+    const validCategories = ['gaming', 'movies', 'music', 'ai', 'sports', 'english'];
     if (!validCategories.includes(category)) {
       return new Response(JSON.stringify({ error: 'Invalid category' }), {
         status: 400,
@@ -49,8 +49,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       });
     }
 
-    if (category === 'music') {
-      await ensureMusicCategory(DB);
+    if (category === 'music' || category === 'ai') {
+      await ensureExpandedCategories(DB);
     }
 
     await updatePost(DB, postId, {

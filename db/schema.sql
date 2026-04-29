@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS posts (
   author_id INTEGER NOT NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
-  category TEXT NOT NULL CHECK(category IN ('gaming', 'movies', 'music', 'sports', 'english')),
+  category TEXT NOT NULL CHECK(category IN ('gaming', 'movies', 'music', 'ai', 'sports', 'english')),
   sport_type TEXT CHECK(sport_type IN ('basketball', 'badminton', 'marathon', NULL)),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

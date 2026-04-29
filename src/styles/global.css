@@ -43,6 +43,8 @@
   --cat-movies-glow: rgba(244,114,182,0.25);
   --cat-music: #f8c14a;
   --cat-music-glow: rgba(248,193,74,0.24);
+  --cat-ai: #22d3ee;
+  --cat-ai-glow: rgba(34,211,238,0.24);
   --cat-sports: #10d9a0;
   --cat-sports-glow: rgba(16,217,160,0.25);
   --cat-english: #38bdf8;
@@ -377,6 +379,11 @@ textarea.input {
   background: rgba(248,193,74,0.14);
   color: #facc6b;
   border-color: rgba(248,193,74,0.28);
+}
+.tag-ai {
+  background: rgba(34,211,238,0.13);
+  color: #67e8f9;
+  border-color: rgba(34,211,238,0.28);
 }
 .tag-sports {
   background: rgba(16,217,160,0.12);
