@@ -4,7 +4,7 @@ import Layout from '../../layouts/Layout.astro';
 import MemberBadge from '../../components/MemberBadge.astro';
 import CategoryTag from '../../components/CategoryTag.astro';
 import CommentSection from '../../components/CommentSection.astro';
-import { getPostById, getCommentsByPostId } from '../../lib/db';
+import { getPostById } from '../../lib/db';
 import { timeAgo } from '../../lib/i18n';
 import { marked } from 'marked';
 
@@ -13,16 +13,12 @@ const lang = (Astro.url.searchParams.get('lang') as 'zh' | 'en') || 'zh';
 const user = (Astro.locals as any).user;
 
 let post: any = null;
-let comments: any[] = [];
 
 try {
   const runtime = (Astro.locals as any).runtime;
   if (runtime?.env?.DB) {
     const DB = runtime.env.DB;
-    [post, comments] = await Promise.all([
-      getPostById(DB, Number(id), user?.id),
-      getCommentsByPostId(DB, Number(id)),
-    ]);
+    post = await getPostById(DB, Number(id), user?.id);
   }
 } catch (e) {
   console.error('Failed to load post:', e);
@@ -138,7 +134,7 @@ const isAuthor = user && user.id === post.author_id;
 
       <!-- Comments -->
       <CommentSection
-        comments={comments}
+        comments={[]}
         postId={post.id}
         user={user}
         lang={lang}

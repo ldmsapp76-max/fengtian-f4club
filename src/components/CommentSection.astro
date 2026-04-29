@@ -14,10 +14,10 @@ interface Props {
 const { comments, postId, user, lang = 'zh' } = Astro.props;
 ---
 
-<section class="comment-section" id="comments">
+<section class="comment-section" id="comments" data-post-id={postId} data-lang={lang}>
   <h3 class="comment-title">
     {lang === 'zh' ? '评论' : 'Comments'}
-    <span class="comment-count">{comments.length}</span>
+    <span class="comment-count" id="comment-count">{comments.length}</span>
   </h3>
 
   <!-- Comment Form -->
@@ -51,7 +51,7 @@ const { comments, postId, user, lang = 'zh' } = Astro.props;
   <div class="comment-list" id="comment-list">
     {comments.length === 0 ? (
       <div class="empty-state">
-        <p>{lang === 'zh' ? '还没有评论，来说第一句吧' : 'No comments yet, be the first'}</p>
+        <p>{lang === 'zh' ? '评论加载中...' : 'Loading comments...'}</p>
       </div>
     ) : (
       comments.map((comment) => (
@@ -72,10 +72,89 @@ const { comments, postId, user, lang = 'zh' } = Astro.props;
 </section>
 
 <!-- Comment Submit Script -->
-<script is:inline>
+<script is:inline data-astro-rerun>
+(function initComments() {
+  const section = document.getElementById('comments');
+  if (!section || section.dataset.ready === 'true') return;
+  section.dataset.ready = 'true';
+
   const form = document.getElementById('comment-form');
   const input = document.getElementById('comment-input');
   const list = document.getElementById('comment-list');
+  const count = document.getElementById('comment-count');
+  const lang = section?.dataset.lang || 'zh';
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function relativeTime(value) {
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 1000));
+    if (seconds < 60) return lang === 'zh' ? '刚刚' : 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return lang === 'zh' ? `${minutes}分钟前` : `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return lang === 'zh' ? `${hours}小时前` : `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return lang === 'zh' ? `${days}天前` : `${days}d ago`;
+  }
+
+  function renderComment(comment) {
+    const nickname = escapeHtml(comment.author_nickname || '');
+    const emoji = escapeHtml(comment.author_emoji || '👤');
+    const content = escapeHtml(comment.content || '');
+    return `
+      <div class="comment-item animate-fade-in">
+        <div class="comment-item-header">
+          <div class="comment-member">
+            <span class="comment-member-emoji">${emoji}</span>
+            <span class="comment-member-name">${nickname}</span>
+          </div>
+          <span class="comment-time">${relativeTime(comment.created_at)}</span>
+        </div>
+        <div class="comment-content">${content}</div>
+      </div>
+    `;
+  }
+
+  function renderComments(comments) {
+    if (!list) return;
+    if (count) count.textContent = String(comments.length);
+    if (comments.length === 0) {
+      list.innerHTML = `<div class="empty-state"><p>${lang === 'zh' ? '还没有评论，来说第一句吧' : 'No comments yet, be the first'}</p></div>`;
+      return;
+    }
+    list.innerHTML = comments.map(renderComment).join('');
+  }
+
+  async function loadComments() {
+    if (!section || section.dataset.loaded === 'true') return;
+    section.dataset.loaded = 'true';
+    const postId = section.dataset.postId;
+    try {
+      const res = await fetch(`/api/comments?postId=${postId}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error('Failed to load comments');
+      const data = await res.json();
+      renderComments(data.comments || []);
+    } catch (error) {
+      if (list) {
+        list.innerHTML = `<div class="empty-state"><p>${lang === 'zh' ? '评论暂时加载失败' : 'Comments failed to load'}</p></div>`;
+      }
+    }
+  }
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(loadComments, { timeout: 900 });
+  } else {
+    setTimeout(loadComments, 250);
+  }
 
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -95,8 +174,16 @@ const { comments, postId, user, lang = 'zh' } = Astro.props;
       });
 
       if (res.ok) {
-        // Reload page to show new comment
-        window.location.reload();
+        const data = await res.json();
+        section.dataset.loaded = 'true';
+        const currentCount = Number(count?.textContent || 0);
+        if (list) {
+          const wasEmpty = list.querySelector('.empty-state');
+          if (wasEmpty) list.innerHTML = '';
+          list.insertAdjacentHTML('beforeend', renderComment(data.comment));
+        }
+        if (count) count.textContent = String(currentCount + 1);
+        input.value = '';
       } else {
         const data = await res.json();
         alert(data.error || 'Failed to post comment');
@@ -108,6 +195,7 @@ const { comments, postId, user, lang = 'zh' } = Astro.props;
       submitBtn.textContent = '发表';
     }
   });
+})();
 </script>
 
 <style>
@@ -193,6 +281,24 @@ const { comments, postId, user, lang = 'zh' } = Astro.props;
     align-items: center;
     justify-content: space-between;
     margin-bottom: var(--space-sm);
+  }
+
+  .comment-member {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .comment-member-emoji {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .comment-member-name {
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    font-weight: 600;
   }
 
   .comment-time {

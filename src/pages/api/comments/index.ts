@@ -1,6 +1,36 @@
 // 奉天F4Club — Comments API
 import type { APIRoute } from 'astro';
-import { createComment, deleteComment, getCommentById } from '../../../lib/db';
+import { createComment, deleteComment, getCommentById, getCommentsByPostId } from '../../../lib/db';
+
+export const GET: APIRoute = async ({ request, locals }) => {
+  const runtime = (locals as any).runtime;
+  const { DB } = runtime.env;
+  const url = new URL(request.url);
+  const postId = Number(url.searchParams.get('postId'));
+
+  if (!Number.isInteger(postId) || postId <= 0) {
+    return new Response(JSON.stringify({ error: 'Invalid postId' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const comments = await getCommentsByPostId(DB, postId);
+    return new Response(JSON.stringify({ comments }), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'private, max-age=15',
+      },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+};
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = (locals as any).user;
@@ -31,7 +61,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       content,
     });
 
-    return new Response(JSON.stringify({ success: true, id }), {
+    return new Response(JSON.stringify({
+      success: true,
+      comment: {
+        id,
+        post_id: Number(postId),
+        author_id: user.id,
+        content,
+        created_at: new Date().toISOString(),
+        author_nickname: user.nickname,
+        author_emoji: user.avatar_emoji,
+      },
+    }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     });
