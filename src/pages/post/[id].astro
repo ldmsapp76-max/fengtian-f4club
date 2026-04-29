@@ -60,7 +60,7 @@ function youtubeEmbedHtml(rawUrl: string): string {
   const embedUrl = getYouTubeEmbedUrl(rawUrl);
   if (!embedUrl) return rawUrl;
 
-  return `<div class="youtube-embed"><iframe src="${embedUrl}" title="YouTube video player" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`;
+  return `\n\n<div class="youtube-embed"><iframe src="${embedUrl}" title="YouTube video player" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>\n\n`;
 }
 
 function renderPostContent(content: string): string {
@@ -71,7 +71,7 @@ function renderPostContent(content: string): string {
 
   const withBareEmbeds = withMarkdownEmbeds.replace(
     /(^|\n)\s*(https?:\/\/(?:www\.|m\.)?(?:youtube\.com|youtu\.be)\/[^\s<]+)\s*(?=\n|$)/g,
-    (_match, prefix, url) => `${prefix}\n${youtubeEmbedHtml(url)}\n`,
+    (_match, prefix, url) => `${prefix}${youtubeEmbedHtml(url)}`,
   );
 
   return marked.parse(withBareEmbeds, { breaks: true }) as string;
