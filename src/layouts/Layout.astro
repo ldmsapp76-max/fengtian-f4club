@@ -168,6 +168,7 @@ const currentPath = Astro.url.pathname;
   window.__f4clubPrefetched = prefetched;
   const canPrefetch = (anchor) => {
     if (!anchor?.href || anchor.target || anchor.hasAttribute('download')) return false;
+    if (anchor.closest('.category-filter')) return false;
     const url = new URL(anchor.href, window.location.href);
     if (url.origin !== window.location.origin) return false;
     if (url.pathname.startsWith('/api/')) return false;
@@ -212,7 +213,7 @@ const currentPath = Astro.url.pathname;
 
     const warmVisibleLinks = () => {
       const anchors = Array.from(document.querySelectorAll(
-        '.post-card-link, .category-filter a, .nav-link, .nav-post-btn, .author-actions a'
+        '.post-card-link, .nav-link, .nav-post-btn, .author-actions a'
       )).slice(0, 12);
       anchors.forEach((anchor, index) => {
         setTimeout(() => prefetchPage(anchor), 120 * index);

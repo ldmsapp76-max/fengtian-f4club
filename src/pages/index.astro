@@ -18,7 +18,7 @@ try {
     const DB = runtime.env.DB;
     [posts, members] = await Promise.all([
       getPosts(DB, {
-        category: category || undefined,
+        limit: 80,
         userId: user?.id,
       }),
       getAllUsers(DB),
@@ -39,6 +39,9 @@ const categories = [
 ];
 
 const activeCategory = categories.find((cat) => cat.key === category) || categories[0];
+const initialVisiblePostCount = category
+  ? posts.filter((post) => post.category === category).length
+  : posts.length;
 const heroSubtitle = lang === 'zh'
   ? '四个老同事的私密会客厅，游戏、电影、音乐、AI技术、运动和英语都可以随手开聊。'
   : 'A private lounge for four former teammates: games, movies, music, AI tech, sports, and English notes.';
@@ -81,7 +84,7 @@ const memberCount = members.length || 4;
           </div>
           <div>
             <span>{lang === 'zh' ? '当前' : 'Now'}</span>
-            <strong>{activeCategory.label}</strong>
+            <strong id="current-category-label">{activeCategory.label}</strong>
           </div>
         </div>
         {members.length > 0 && (
@@ -105,6 +108,8 @@ const memberCount = members.length || 4;
         {categories.map((cat) => (
           <a
             href={cat.key ? `/?cat=${cat.key}${lang !== 'zh' ? `&lang=${lang}` : ''}` : `/${lang !== 'zh' ? `?lang=${lang}` : ''}`}
+            data-category={cat.key}
+            data-label={cat.label}
             class={`filter-btn filter-${cat.tone} ${category === cat.key ? 'active' : ''}`}
           >
             <span>{cat.emoji}</span>
@@ -117,13 +122,23 @@ const memberCount = members.length || 4;
     {posts.length > 0 ? (
       <section class="feed-section" aria-label="Posts">
         <div class="feed-meta">
-          <span>{activeCategory.label}</span>
-          <span>{posts.length} {lang === 'zh' ? '篇动态' : 'posts'}</span>
+          <span id="feed-category-label">{activeCategory.label}</span>
+          <span><span id="feed-post-count">{initialVisiblePostCount}</span> {lang === 'zh' ? '篇动态' : 'posts'}</span>
         </div>
         <div class="posts-grid">
           {posts.map((post, i) => (
-            <PostCard post={post} lang={lang} index={i} />
+            <div class={`post-card-shell ${category && post.category !== category ? 'is-hidden' : ''}`} data-category={post.category}>
+              <PostCard post={post} lang={lang} index={i} />
+            </div>
           ))}
+        </div>
+        <div class={`empty-filter ${initialVisiblePostCount > 0 ? 'is-hidden' : ''}`} id="empty-filter">
+          <p>{lang === 'zh' ? '这个频道还没有帖子' : 'No posts in this channel yet'}</p>
+          {user && (
+            <a href="/post/new" class="btn btn-primary btn-sm">
+              {lang === 'zh' ? '发布新帖' : 'New Post'}
+            </a>
+          )}
         </div>
       </section>
     ) : (
@@ -158,6 +173,66 @@ const memberCount = members.length || 4;
       </section>
     )}
   </div>
+
+  <script is:inline data-astro-rerun>
+(function initHomeCategoryFilter() {
+  const filter = document.querySelector('.category-filter');
+  if (!filter || filter.dataset.ready === 'true') return;
+  filter.dataset.ready = 'true';
+
+  const cards = Array.from(document.querySelectorAll('.post-card-shell'));
+  const feedCategoryLabel = document.getElementById('feed-category-label');
+  const currentCategoryLabel = document.getElementById('current-category-label');
+  const feedPostCount = document.getElementById('feed-post-count');
+  const emptyFilter = document.getElementById('empty-filter');
+
+  function applyCategory(category, label, updateUrl) {
+    let visibleCount = 0;
+
+    cards.forEach((card) => {
+      const visible = !category || card.dataset.category === category;
+      card.classList.toggle('is-hidden', !visible);
+      if (visible) visibleCount += 1;
+    });
+
+    filter.querySelectorAll('.filter-btn').forEach((button) => {
+      button.classList.toggle('active', button.dataset.category === category);
+    });
+
+    if (feedCategoryLabel) feedCategoryLabel.textContent = label;
+    if (currentCategoryLabel) currentCategoryLabel.textContent = label;
+    if (feedPostCount) feedPostCount.textContent = String(visibleCount);
+    emptyFilter?.classList.toggle('is-hidden', visibleCount > 0);
+
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      if (category) {
+        url.searchParams.set('cat', category);
+      } else {
+        url.searchParams.delete('cat');
+      }
+      history.pushState({ category }, '', `${url.pathname}${url.search}`);
+    }
+  }
+
+  filter.addEventListener('click', (event) => {
+    const button = event.target.closest('.filter-btn');
+    if (!button) return;
+
+    event.preventDefault();
+    applyCategory(button.dataset.category || '', button.dataset.label || '', true);
+  });
+
+  window.addEventListener('popstate', () => {
+    const url = new URL(window.location.href);
+    const category = url.searchParams.get('cat') || '';
+    const button =
+      filter.querySelector(`.filter-btn[data-category="${category}"]`) ||
+      filter.querySelector('.filter-btn[data-category=""]');
+    applyCategory(category, button?.dataset.label || '', false);
+  });
+})();
+  </script>
 </Layout>
 
 <style>
@@ -402,6 +477,24 @@ const memberCount = members.length || 4;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-md);
+  }
+
+  .post-card-shell.is-hidden,
+  .empty-filter.is-hidden {
+    display: none;
+  }
+
+  .empty-filter {
+    padding: var(--space-xl);
+    text-align: center;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-lg);
+  }
+
+  .empty-filter p {
+    margin-bottom: var(--space-md);
   }
 
   .empty-club {
