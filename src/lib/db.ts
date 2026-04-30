@@ -105,7 +105,6 @@ export async function getPosts(
   } = {}
 ): Promise<Post[]> {
   const { category, authorId, limit = 20, offset = 0, userId } = options;
-  await ensurePerformanceIndexes(db);
 
   let query = `
     WITH filtered_posts AS (
@@ -158,8 +157,6 @@ export async function getPosts(
 }
 
 export async function getPostById(db: D1Database, id: number, userId?: number): Promise<Post | null> {
-  await ensurePerformanceIndexes(db);
-
   const query = `
     SELECT
       p.*,
@@ -272,8 +269,6 @@ export async function ensureExpandedCategories(db: D1Database): Promise<void> {
 // ---- Comments ----
 
 export async function getCommentsByPostId(db: D1Database, postId: number): Promise<Comment[]> {
-  await ensurePerformanceIndexes(db);
-
   const result = await db
     .prepare(`
       SELECT c.*, u.nickname as author_nickname, u.avatar_emoji as author_emoji
@@ -318,8 +313,6 @@ export async function deleteComment(db: D1Database, id: number): Promise<void> {
 // ---- Likes ----
 
 export async function toggleLike(db: D1Database, postId: number, userId: number): Promise<boolean> {
-  await ensurePerformanceIndexes(db);
-
   const existing = await db
     .prepare('SELECT id FROM likes WHERE post_id = ? AND user_id = ?')
     .bind(postId, userId)
@@ -335,8 +328,6 @@ export async function toggleLike(db: D1Database, postId: number, userId: number)
 }
 
 export async function getLikeCount(db: D1Database, postId: number): Promise<number> {
-  await ensurePerformanceIndexes(db);
-
   const result = await db.prepare('SELECT COUNT(*) as count FROM likes WHERE post_id = ?').bind(postId).first<{ count: number }>();
   return result?.count || 0;
 }
@@ -352,8 +343,6 @@ export async function ensurePasswordsSet(db: D1Database, defaultHash: string): P
 }
 
 export async function getPostCount(db: D1Database, authorId?: number): Promise<number> {
-  await ensurePerformanceIndexes(db);
-
   let query = 'SELECT COUNT(*) as count FROM posts';
   if (authorId) {
     query += ' WHERE author_id = ?';
