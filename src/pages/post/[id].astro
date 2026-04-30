@@ -111,12 +111,12 @@ const isAuthor = user && user.id === post.author_id;
       <!-- Post Actions -->
       <div class="post-actions animate-fade-in delay-3">
         <button
-          class={`like-btn ${post.liked_by_user ? 'liked' : ''}`}
+          class="like-btn"
           id="like-btn"
           data-post-id={post.id}
         >
-          <span class="heart">{post.liked_by_user ? '❤️' : '🤍'}</span>
-          <span id="like-count">{post.like_count || 0}</span>
+          <span class="heart">🤍</span>
+          <span id="like-count">...</span>
           <span>{lang === 'zh' ? '赞' : 'Like'}</span>
         </button>
 
@@ -173,6 +173,30 @@ const isAuthor = user && user.id === post.author_id;
       console.error('Like error:', err);
     }
   });
+
+  const loadLikeStatus = async () => {
+    if (!likeBtn) return;
+    const postId = likeBtn.dataset.postId;
+    try {
+      const res = await fetch(`/api/likes?postId=${postId}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      likeCount.textContent = data.count;
+      likeBtn.classList.toggle('liked', data.liked);
+      const heart = likeBtn.querySelector('.heart');
+      heart.textContent = data.liked ? '❤️' : '🤍';
+    } catch (err) {
+      if (likeCount) likeCount.textContent = '0';
+    }
+  };
+
+  if ('requestIdleCallback' in window) {
+    window.requestIdleCallback(loadLikeStatus, { timeout: 800 });
+  } else {
+    setTimeout(loadLikeStatus, 120);
+  }
 
   // Delete post
   const deleteBtn = document.getElementById('delete-btn');

@@ -162,19 +162,13 @@ export async function getPostById(db: D1Database, id: number, userId?: number): 
       p.*,
       u.nickname as author_nickname,
       u.avatar_emoji as author_emoji,
-      u.role as author_role,
-      (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) as comment_count,
-      (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) as like_count,
-      CASE
-        WHEN ? IS NULL THEN 0
-        ELSE EXISTS(SELECT 1 FROM likes l WHERE l.post_id = p.id AND l.user_id = ?)
-      END as liked_by_user
+      u.role as author_role
     FROM posts p
     JOIN users u ON p.author_id = u.id
     WHERE p.id = ?
   `;
 
-  const result = await db.prepare(query).bind(userId || null, userId || null, id).first<Post>();
+  const result = await db.prepare(query).bind(id).first<Post>();
   return result || null;
 }
 
@@ -330,6 +324,15 @@ export async function toggleLike(db: D1Database, postId: number, userId: number)
 export async function getLikeCount(db: D1Database, postId: number): Promise<number> {
   const result = await db.prepare('SELECT COUNT(*) as count FROM likes WHERE post_id = ?').bind(postId).first<{ count: number }>();
   return result?.count || 0;
+}
+
+export async function hasUserLiked(db: D1Database, postId: number, userId?: number): Promise<boolean> {
+  if (!userId) return false;
+  const result = await db
+    .prepare('SELECT 1 FROM likes WHERE post_id = ? AND user_id = ?')
+    .bind(postId, userId)
+    .first();
+  return Boolean(result);
 }
 
 // ---- Init / Setup ----
