@@ -18,7 +18,7 @@ try {
     const DB = runtime.env.DB;
     [posts, members] = await Promise.all([
       getPosts(DB, {
-        limit: 80,
+        limit: 30,
         userId: user?.id,
       }),
       getAllUsers(DB),

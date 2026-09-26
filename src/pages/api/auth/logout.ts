@@ -11,11 +11,13 @@ export const GET: APIRoute = async ({ request, locals, redirect }) => {
     await deleteSession(SESSIONS, token);
   }
 
+  const isSecure = new URL(request.url).protocol === 'https:';
+
   return new Response(null, {
     status: 302,
     headers: {
       'Location': '/',
-      'Set-Cookie': clearSessionCookie(),
+      'Set-Cookie': clearSessionCookie(isSecure),
     },
   });
 };

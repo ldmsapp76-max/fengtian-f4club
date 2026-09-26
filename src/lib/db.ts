@@ -1,5 +1,7 @@
 // 奉天F4Club — Database Operations
 
+import { hashPassword } from './auth';
+
 export interface User {
   id: number;
   nickname: string;
@@ -337,12 +339,18 @@ export async function hasUserLiked(db: D1Database, postId: number, userId?: numb
 
 // ---- Init / Setup ----
 
-export async function ensurePasswordsSet(db: D1Database, defaultHash: string): Promise<void> {
-  // Set default password for users who don't have one yet
-  await db
-    .prepare("UPDATE users SET password_hash = ? WHERE password_hash IS NULL OR password_hash = ''")
-    .bind(defaultHash)
-    .run();
+export async function ensurePasswordsSet(db: D1Database, defaultPassword: string): Promise<void> {
+  // Set default password for users who don't have one yet.
+  // 每个用户单独生成随机盐，避免多人共用同一个哈希。
+  const users = await db
+    .prepare("SELECT id FROM users WHERE password_hash IS NULL OR password_hash = ''")
+    .all<{ id: number }>();
+  for (const u of users.results || []) {
+    await db
+      .prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+      .bind(await hashPassword(defaultPassword), u.id)
+      .run();
+  }
 }
 
 export async function getPostCount(db: D1Database, authorId?: number): Promise<number> {

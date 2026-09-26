@@ -35,8 +35,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    // Validate file type.
+    // 注意：不允许 SVG —— SVG 可内嵌 JavaScript，存进 R2 后会被当图片直接 serving，
+    // 造成存储型 XSS。只保留光栅格式。
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
     if (!allowedTypes.includes(file.type)) {
       return new Response(JSON.stringify({ error: 'Invalid file type' }), {
         status: 400,
