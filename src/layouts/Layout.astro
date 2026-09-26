@@ -119,11 +119,24 @@ const currentPath = Astro.url.pathname;
     }
   };
 
-  if (localStorage.getItem('theme') === 'light') {
-    document.documentElement.setAttribute('data-theme','light');
-  }
+  const applyStoredTheme = () => {
+    try {
+      if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.setAttribute('data-theme','light');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+    } catch (e) {}
+  };
+
+  applyStoredTheme();
   applyThemeIcon();
   document.addEventListener('astro:page-load', applyThemeIcon);
+  // 无刷新导航会剥掉 <html> 上的 data-theme，切完页面后重新恢复
+  document.addEventListener('astro:after-swap', () => {
+    applyStoredTheme();
+    applyThemeIcon();
+  });
 
   if (!window.__f4clubChromeReady) {
     window.__f4clubChromeReady = true;
