@@ -85,8 +85,8 @@
   /* Border Radius */
   --radius-sm: 6px;
   --radius-md: 8px;
-  --radius-lg: 8px;
-  --radius-xl: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
   --radius-full: 9999px;
 
   /* Shadows */
@@ -110,13 +110,13 @@
 
 /* --- Light Theme --- */
 [data-theme="light"] {
-  --bg-primary: #f4f5fb;
-  --bg-secondary: #e8eaf6;
+  --bg-primary: #f6f7f9;
+  --bg-secondary: #eceef4;
   --bg-card: rgba(255,255,255,0.85);
   --bg-card-hover: rgba(255,255,255,0.98);
   --bg-elevated: rgba(255,255,255,0.9);
   --bg-input: rgba(255,255,255,0.8);
-  --bg-glass: rgba(244,245,251,0.8);
+  --bg-glass: rgba(246,247,249,0.8);
 
   --border-subtle: rgba(0,0,0,0.07);
   --border-default: rgba(0,0,0,0.12);
@@ -125,12 +125,66 @@
   --text-primary: #0f1020;
   --text-secondary: #4a5280;
   --text-muted: #8890b0;
-  --text-inverse: #f4f5fb;
+  --text-inverse: #f6f7f9;
+
+  /* 白天模式下加深主色，保证在白色背景上的对比度 */
+  --accent: #d63a56;
+  --accent-hover: #e94560;
 
   --shadow-sm: 0 1px 4px rgba(0,0,0,0.07);
   --shadow-md: 0 6px 20px rgba(0,0,0,0.1);
   --shadow-lg: 0 12px 40px rgba(0,0,0,0.13);
   --shadow-card: 0 2px 12px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* 白天模式：去掉全页深色照片底和白色点阵，背景用干净纯色 */
+html[data-theme="light"] body::before,
+html[data-theme="light"] body::after {
+  display: none;
+}
+
+/* 白天模式：卡片用纯白扁平样式，去掉玻璃拟态 */
+[data-theme="light"] .card {
+  background: #ffffff;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* 白天模式：分类标签加深文字色，保证在白卡上的对比度 */
+[data-theme="light"] .tag-gaming {
+  color: #5b51d6;
+  background: rgba(124,111,247,0.1);
+  border-color: rgba(124,111,247,0.32);
+}
+[data-theme="light"] .tag-movies {
+  color: #cf3d8a;
+  background: rgba(244,114,182,0.1);
+  border-color: rgba(244,114,182,0.32);
+}
+[data-theme="light"] .tag-music {
+  color: #96690a;
+  background: rgba(248,193,74,0.14);
+  border-color: rgba(248,193,74,0.4);
+}
+[data-theme="light"] .tag-ai {
+  color: #0e7490;
+  background: rgba(34,211,238,0.1);
+  border-color: rgba(34,211,238,0.35);
+}
+[data-theme="light"] .tag-sports {
+  color: #047857;
+  background: rgba(16,217,160,0.1);
+  border-color: rgba(16,217,160,0.32);
+}
+[data-theme="light"] .tag-english {
+  color: #0369a1;
+  background: rgba(56,189,248,0.1);
+  border-color: rgba(56,189,248,0.35);
+}
+
+/* 白天模式：正文行内代码加深颜色 */
+[data-theme="light"] .prose code {
+  color: #6d28d9;
 }
 
 /* --- Reset --- */
@@ -182,11 +236,6 @@ body::after {
   mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 72%);
   pointer-events: none;
   z-index: 0;
-}
-
-html[data-theme="light"] body::before {
-  opacity: 0.22;
-  filter: saturate(0.72) contrast(0.94);
 }
 
 a { color: inherit; text-decoration: none; }
