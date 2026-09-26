@@ -259,6 +259,20 @@ const memberCount = members.length || 4;
     box-shadow: 0 28px 70px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.16);
   }
 
+  /* 白天模式：换成白天版背景图，遮罩调亮 */
+  :global([data-theme="light"]) .home-hero {
+    background:
+      linear-gradient(90deg, rgba(24,28,36,0.80) 0%, rgba(24,28,36,0.38) 48%, rgba(24,28,36,0.10) 100%),
+      url('/assets/f4club-hero-day.webp') center / cover no-repeat;
+    border-color: rgba(0,0,0,0.08);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.55);
+  }
+  :global([data-theme="light"]) .hero-shade {
+    background:
+      linear-gradient(180deg, transparent 0%, rgba(24,28,36,0.16) 62%, rgba(24,28,36,0.42) 100%),
+      linear-gradient(90deg, rgba(233,69,96,0.10), transparent 42%, rgba(56,189,248,0.08));
+  }
+
   .hero-shade {
     position: absolute;
     inset: 0;
